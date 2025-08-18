@@ -9,7 +9,7 @@ import {
   FaMapMarkerAlt as FaLocationDot,
   FaPhone, 
   FaEnvelope 
-} from 'react-icons/fa';
+} from 'react-icons/fa6';
 
 // Create icon components with proper typing
 const FacebookIcon = () => <FaFacebook className="h-6 w-6" />;
