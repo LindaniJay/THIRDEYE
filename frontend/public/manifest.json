@@ -1,0 +1,59 @@
+{
+  "name": "Car Sourcing App",
+  "short_name": "Car Sourcing",
+  "description": "Find and source your dream car with our premium car sourcing service",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "categories": ["cars", "automotive", "vehicles", "luxury"],
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screenshot2.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Find a Car",
+      "short_name": "Find",
+      "description": "Find your dream car",
+      "url": "/find"
+    },
+    {
+      "name": "My Garage",
+      "short_name": "Garage",
+      "description": "View your saved cars",
+      "url": "/garage"
+    }
+  ],
+  "prefer_related_applications": false
+}
