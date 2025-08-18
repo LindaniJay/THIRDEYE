@@ -37,8 +37,15 @@
     "test": "react-scripts test",
     "build": "react-scripts build",
     "start": "react-scripts start",
-    "vercel-build": "npm run build"
+    "vercel-build": "npm install && npm run build"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "cacheDirectories": [
+    "node_modules",
+    "../node_modules"
+  ],
   "eslintConfig": {
     "extends": [
       "react-app",
