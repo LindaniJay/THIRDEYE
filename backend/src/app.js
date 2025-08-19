@@ -32,8 +32,11 @@ app.get('/api/health', (req, res) => {
 });
 
 // API routes
+import inspectionRoutes from './routes/inspection.routes.js';
+
 // app.use('/api/users', userRoutes);
 // app.use('/api/services', serviceRoutes);
+app.use('/api/inspections', inspectionRoutes);
 
 // Handle 404 - must be after all other routes
 app.all('*', notFound);

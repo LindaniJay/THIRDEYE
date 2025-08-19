@@ -4,13 +4,15 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import LoadingSpinner from './components/LoadingSpinner';
+import LiveChat from './components/LiveChat';
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'));
-const ServicesPage = lazy(() => import('./pages/ServicesPage'));
+const OurServicesPage = lazy(() => import('./pages/OurServicesPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
 const ContactUsPage = lazy(() => import('./pages/ContactUsPage'));
+const VehicleInspectionPage = lazy(() => import('./pages/VehicleInspectionPage'));
 
 // Add smooth scroll behavior for the whole app
 document.documentElement.style.scrollBehavior = 'smooth';
@@ -26,34 +28,31 @@ function App() {
     return () => clearTimeout(timer);
   }, [location]);
 
-  const renderLoader = () => (
-    <div className="flex justify-center items-center min-h-screen">
-      <LoadingSpinner className="h-16 w-16" />
-    </div>
-  );
 
   return (
-    <div className="min-h-screen bg-neutral-dark text-neutral-light font-sans bg-gradient-to-br from-neutral-dark via-secondary to-neutral-dark">
-      <ScrollToTop />
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      
-      <main className="relative container mx-auto px-4 py-8">
-        <Suspense fallback={renderLoader()}>
+      <ScrollToTop />
+      <Suspense fallback={<LoadingSpinner />}>
+        <main className="flex-grow">
           {loading ? (
-            renderLoader()
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <LoadingSpinner />
+            </div>
           ) : (
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/services" element={<ServicesPage />} />
+              <Route path="/vehicle-inspection" element={<VehicleInspectionPage />} />
+              <Route path="/services" element={<OurServicesPage />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/about" element={<AboutUsPage />} />
               <Route path="/contact" element={<ContactUsPage />} />
             </Routes>
           )}
-        </Suspense>
-      </main>
-      
+        </main>
+      </Suspense>
       <Footer />
+      <LiveChat />
     </div>
   );
 }

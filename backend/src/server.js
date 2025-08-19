@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { createLogger, format, transports } from 'winston';
 import app from './app.js';
 import { connectDB } from './config/db.js';
+import { ChatController } from './chat/chat.controller.js';
 
 // Initialize logger
 const logger = createLogger({
@@ -29,6 +30,9 @@ const logger = createLogger({
 // Create HTTP server
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Initialize WebSocket server for chat
+const chatController = new ChatController(server);
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {

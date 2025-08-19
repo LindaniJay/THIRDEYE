@@ -1,13 +1,13 @@
 {
-  "name": "Car Sourcing App",
-  "short_name": "Car Sourcing",
-  "description": "Find and source your dream car with our premium car sourcing service",
+  "name": "THIRDEYE",
+  "short_name": "THIRDEYE",
+  "description": "Your trusted partner for premium vehicle sourcing and inspection services",
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#2563eb",
+  "theme_color": "#1e40af",
   "background_color": "#ffffff",
   "orientation": "portrait",
-  "categories": ["cars", "automotive", "vehicles", "luxury"],
+  "categories": ["automotive", "vehicles", "inspection", "sourcing"],
   "icons": [
     {
       "src": "favicon.ico",

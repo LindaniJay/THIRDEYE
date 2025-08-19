@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const Navbar: React.FC = () => {
@@ -41,14 +41,24 @@ const Navbar: React.FC = () => {
     { to: "/services", text: "Our Services" },
     { to: "/pricing", text: "Pricing" },
     { to: "/about", text: "About Us" },
+    { to: "/contact", text: "Contact Us" }
   ];
 
   return (
     <nav className="bg-gray-900 text-white sticky top-0 z-50 shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <NavLink to="/" className="text-2xl font-bold hover:text-blue-400 transition-colors">
-            THIRDEYE
+          <NavLink to="/" className="flex items-center h-16">
+            <div className="flex items-center bg-white px-3 py-2 rounded-lg shadow-md">
+              <img 
+                src="/Thirdeye Logo Design.png" 
+                alt="THIRDEYE" 
+                className="h-8 w-auto"
+              />
+              <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                THIRDEYE
+              </span>
+            </div>
           </NavLink>
           
           {/* Desktop Navigation */}
@@ -68,12 +78,6 @@ const Navbar: React.FC = () => {
                 {link.text}
               </NavLink>
             ))}
-            <NavLink 
-              to="/contact" 
-              className="ml-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Contact
-            </NavLink>
           </div>
 
           {/* Mobile menu button */}
@@ -95,35 +99,42 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile menu */}
-      <div 
-        className={`mobile-menu md:hidden transition-all duration-300 ease-in-out overflow-hidden ${
-          isOpen ? 'max-h-96' : 'max-h-0'
-        }`}
-      >
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-800">
-          {navLinks.map((link) => (
+      {isOpen && (
+        <div className="md:hidden mobile-menu bg-gray-900">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <div className="flex justify-center py-4">
+              <div className="bg-white p-2 rounded">
+                <img 
+                  src="/Thirdeye Logo Design.png" 
+                  alt="THIRDEYE Logo" 
+                  className="h-10 w-auto"
+                />
+              </div>
+            </div>
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `block px-3 py-2 rounded-md text-base font-medium ${
+                    isActive
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  }`
+                }
+              >
+                {link.text}
+              </NavLink>
+            ))}
             <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) => 
-                `block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive 
-                    ? 'bg-gray-900 text-white' 
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                }`
-              }
+              to="/contact"
+              className="block w-full text-center px-4 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 mt-2"
             >
-              {link.text}
+              Contact Us
             </NavLink>
-          ))}
-          <NavLink 
-            to="/contact" 
-            className="block w-full text-center bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-base font-medium mt-2"
-          >
-            Contact
-          </NavLink>
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 };

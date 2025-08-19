@@ -22,7 +22,7 @@ const PricingPage: React.FC = () => {
     <div className="container mx-auto max-w-6xl p-4 md:p-8 text-white">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4 text-yellow-400">Our Pricing</h1>
-        <p className="text-gray-300 text-lg">No hidden fees. Just clear, upfront costs for our expert services.</p>
+        <p className="text-gray-100 dark:text-gray-300 text-xl font-medium bg-black/20 dark:bg-white/10 px-6 py-3 rounded-lg inline-block">No hidden fees. Just clear, upfront costs for our expert services.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -44,9 +44,9 @@ const PricingPage: React.FC = () => {
                 </li>
               ))}
             </ul>
-            <button className="btn-primary mt-auto w-full">
+            <NavLink to="/contact" className="btn-primary mt-auto w-full text-center block">
               {option.cta}
-            </button>
+            </NavLink>
           </motion.div>
         ))}
       </div>

@@ -38,38 +38,38 @@ const HomePage: React.FC = () => {
 
       {/* Services Overview */}
       <section className="glass">
-        <h2 className="text-3xl font-bold text-center mb-8">Our Core Services</h2>
+        <h2 className="text-3xl font-bold text-center mb-8 text-white">Our Core Services</h2>
         <div className="grid md:grid-cols-2 gap-8 text-center">
-          <div className="glass p-6 hover:-translate-y-2 transition-all duration-300">
+          <div className="glass p-6 hover:-translate-y-2 transition-all duration-300 text-white">
             <h3 className="text-xl font-bold mb-2">Vehicle Inspections</h3>
-            <p>Comprehensive pre-purchase checks to ensure your next car is a great investment.</p>
+            <p className="text-gray-200">Comprehensive pre-purchase checks to ensure your next car is a great investment.</p>
           </div>
-          <div className="glass p-6 hover:-translate-y-2 transition-all duration-300">
+          <div className="glass p-6 hover:-translate-y-2 transition-all duration-300 text-white">
             <h3 className="text-xl font-bold mb-2">Rental Property Inspections</h3>
-            <p>Arrive in KZN with confidence. We inspect your new rental apartment or house before you move in.</p>
+            <p className="text-gray-200">Arrive in KZN with confidence. We inspect your new rental apartment or house before you move in.</p>
           </div>
         </div>
       </section>
 
       {/* Why Choose Us Section */}
       <section className="glass p-8">
-        <h2 className="text-3xl font-bold text-center mb-8">Why Trust THIRDEYE?</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+        <h2 className="text-3xl font-bold text-center mb-8 text-white">Why Trust THIRDEYE?</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 text-center text-white">
           <div>
             <h3 className="text-xl font-bold">Professionalism</h3>
-            <p className="text-gray-400 mt-2">Our certified inspectors deliver meticulous, industry-standard reports.</p>
+            <p className="text-gray-200 mt-2">Our certified inspectors deliver meticulous, industry-standard reports.</p>
           </div>
           <div>
             <h3 className="text-xl font-bold">KwaZulu-Natal Focus</h3>
-            <p className="text-gray-400 mt-2">We are specialists in the KZN market, providing localized expertise for your vehicle and rental needs.</p>
+            <p className="text-gray-200 mt-2">We are specialists in the KZN market, providing localized expertise for your vehicle and rental needs.</p>
           </div>
           <div>
             <h3 className="text-xl font-bold">Client Satisfaction</h3>
-            <p className="text-gray-400 mt-2">Your confidence is our priority. We're dedicated to exceptional service.</p>
+            <p className="text-gray-200 mt-2">Your confidence is our priority. We're dedicated to exceptional service.</p>
           </div>
           <div>
             <h3 className="text-xl font-bold">Total Trustworthiness</h3>
-            <p className="text-gray-400 mt-2">As an independent third party, our evaluations are always unbiased.</p>
+            <p className="text-gray-200 mt-2">As an independent third party, our evaluations are always unbiased.</p>
           </div>
         </div>
       </section>

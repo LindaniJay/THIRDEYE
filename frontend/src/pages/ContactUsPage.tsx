@@ -1,4 +1,5 @@
 import React, { useRef, useState, ChangeEvent } from 'react';
+import axios from 'axios';
 import emailjs from '@emailjs/browser';
 
 type ServiceType = 'property' | 'vehicle' | '';
@@ -10,7 +11,7 @@ const ContactUsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [serviceType, setServiceType] = useState<ServiceType>('');
 
-  const sendEmail = (e: React.FormEvent<HTMLFormElement>) => {
+  const sendEmail = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.current) return;
 
@@ -18,19 +19,34 @@ const ContactUsPage: React.FC = () => {
     setError(null);
     setIsSent(false);
 
-    // Replace with your actual EmailJS credentials
-    emailjs.sendForm('service_tsft4m6', 'template_q9nhqnt', form.current, '8rZgkbkbrRscKrSKK')
-      .then((result) => {
-          console.log(result.text);
-          setIsSent(true);
-          form.current?.reset();
-      }, (error) => {
-          console.log(error.text);
-          setError('Failed to send message. Please try again later.');
-      })
-      .finally(() => {
-        setIsSending(false);
-      });
+    try {
+      // First, send the email
+      const emailResult = await emailjs.sendForm(
+        'service_tsft4m6',
+        'template_q9nhqnt',
+        form.current,
+        '8rZgkbkbrRscKrSKK'
+      );
+      
+      console.log(emailResult.text);
+      
+      // Then, increment the inspection count
+      try {
+        await axios.post('http://localhost:5000/api/inspections/increment');
+        console.log('Inspection count incremented');
+      } catch (incrementError) {
+        console.error('Error incrementing inspection count:', incrementError);
+        // Don't fail the whole operation if this fails
+      }
+      
+      setIsSent(true);
+      form.current?.reset();
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      setError(error.text || 'Failed to send message. Please try again later.');
+    } finally {
+      setIsSending(false);
+    }
   };
   const handleServiceTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setServiceType(e.target.value as ServiceType);
