@@ -5,22 +5,36 @@ import Testimonials from '../components/Testimonials';
 const HomePage: React.FC = () => {
   return (
     <div className="space-y-16">
-      {/* Hero Section */}
-      <section className="text-center py-20 bg-dark-blue text-white rounded-lg shadow-xl">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
-              Your Trusted Inspection Partner in KwaZulu-Natal
-            </h1>
-            <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              Expert vehicle inspections and rental property evaluations to ensure your peace of mind in KZN.
-            </p>
-            <NavLink to="/contact" className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors duration-300">
-              Book an Inspection Today
-            </NavLink>
-          </div>
-        </div>
-      </section>
+     {/* Hero Section */}
+<section
+  className="relative text-center py-20 bg-cover bg-center rounded-lg shadow-xl overflow-hidden"
+  style={{ backgroundImage: "url('/your-bg.jpg')" }}
+>
+  {/* Glassmorphism container */}
+  <div className="relative w-full h-full backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-10 shadow-2xl flex flex-col items-center justify-center">
+    
+    {/* Dark overlay only inside glass */}
+    <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
+
+    {/* Content */}
+    <div className="relative z-10 max-w-4xl mx-auto space-y-6">
+      <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight text-white">
+        Your Trusted Inspection Partner in KwaZulu-Natal
+      </h1>
+      <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-3xl mx-auto">
+        Expert vehicle inspections and rental property evaluations to ensure your peace of mind in KZN.
+      </p>
+      <NavLink
+        to="/contact"
+        className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors duration-300"
+      >
+        Book an Inspection Today
+      </NavLink>
+    </div>
+  </div>
+</section>
+
+
 
       {/* Services Overview */}
       <section className="glass">
