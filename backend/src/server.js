@@ -1,31 +1,74 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+import 'express-async-errors';
+import 'dotenv/config';
+import http from 'http';
 import mongoose from 'mongoose';
-import bookingRoutes from './routes/booking.routes.js';
+import { createLogger, format, transports } from 'winston';
+import app from './app.js';
+import { connectDB } from './config/db.js';
 
-dotenv.config();
+// Initialize logger
+const logger = createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: format.combine(
+    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    format.errors({ stack: true }),
+    format.splat(),
+    format.json()
+  ),
+  transports: [
+    new transports.Console({
+      format: format.combine(
+        format.colorize(),
+        format.simple()
+      )
+    }),
+    new transports.File({ filename: 'logs/server.log' })
+  ]
+});
 
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Routes
-app.use('/api/bookings', bookingRoutes);
-
-// Database connection
+// Create HTTP server
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
-mongoose
-  .connect(process.env.MONGO_URI || 'mongodb://localhost:27017/car-sourcing')
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  logger.error(error.name, error.message);
+  process.exit(1);
+});
+
+// Connect to database and start server
+const startServer = async () => {
+  try {
+    await connectDB();
+    
+    server.listen(PORT, () => {
+      logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     });
-  })
-  .catch((err) => {
-    console.error('Database connection error:', err);
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  logger.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  logger.error(err.name, err.message);
+  
+  // Close server & exit process
+  server.close(() => {
+    process.exit(1);
   });
+});
+
+// Handle SIGTERM for graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('');
+  server.close(() => {
+    logger.info('');
+  });
+});
