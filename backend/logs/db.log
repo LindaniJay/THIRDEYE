@@ -1,0 +1,14 @@
+{"level":"info","message":"MongoDB Connected: undefined","timestamp":"2025-08-20 11:18:20"}
+{"level":"warn","message":"Mongoose disconnected","timestamp":"2025-08-20 11:18:20"}
+{"level":"error","message":"Error connecting to MongoDB: querySrv ENOTFOUND _mongodb._tcp.cluster0.mongodb.net","timestamp":"2025-08-20 11:18:20"}
+{"level":"error","message":"Mongoose connection error: querySrv ENOTFOUND _mongodb._tcp.cluster0.mongodb.net","timestamp":"2025-08-20 11:18:20"}
+{"level":"info","message":"Mongoose connection closed through app termination","timestamp":"2025-08-20 11:29:48"}
+{"level":"info","message":"MongoDB Connected: undefined","timestamp":"2025-08-20 11:31:57"}
+{"level":"warn","message":"Mongoose disconnected","timestamp":"2025-08-20 11:31:57"}
+{"level":"error","message":"Error connecting to MongoDB: querySrv ENOTFOUND _mongodb._tcp.cluster0.mongodb.net","timestamp":"2025-08-20 11:31:57"}
+{"level":"error","message":"Mongoose connection error: querySrv ENOTFOUND _mongodb._tcp.cluster0.mongodb.net","timestamp":"2025-08-20 11:31:57"}
+{"level":"info","message":"Mongoose connection closed through app termination","timestamp":"2025-08-20 11:35:56"}
+{"level":"info","message":"MongoDB Connected: undefined","timestamp":"2025-08-20 13:53:49"}
+{"level":"warn","message":"Mongoose disconnected","timestamp":"2025-08-20 13:53:49"}
+{"level":"error","message":"Error connecting to MongoDB: querySrv ENOTFOUND _mongodb._tcp.cluster0.mongodb.net","timestamp":"2025-08-20 13:53:49"}
+{"level":"error","message":"Mongoose connection error: querySrv ENOTFOUND _mongodb._tcp.cluster0.mongodb.net","timestamp":"2025-08-20 13:53:49"}

@@ -1,7 +1,9 @@
 import helmet from 'helmet';
+import express from 'express';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
+import sanitizeRequest from './sanitize.js';
+import xssSanitizeRequest from './xssSanitize.js';
 import hpp from 'hpp';
 import { StatusCodes } from 'http-status-codes';
 
@@ -14,7 +16,12 @@ export const setSecurityHeaders = () => {
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", process.env.FRONTEND_URL],
+        connectSrc: [
+          "'self'",
+          process.env.FRONTEND_URL,
+          'http://localhost:3000',
+          'http://127.0.0.1:3000'
+        ],
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
@@ -54,7 +61,8 @@ export const sanitize = mongoSanitize({
 });
 
 // Data sanitization against XSS
-export const preventXSS = xss();
+// legacy alias retained for minimal change risk
+export const preventXSS = xssSanitizeRequest;
 
 // Prevent parameter pollution
 export const preventParamPollution = hpp({
@@ -95,6 +103,13 @@ export const configureCors = (req, res, next) => {
 
 // Security middleware setup
 export const setupSecurity = (app) => {
+  const skipForSocketIO = (middleware) => (req, res, next) => {
+    if (req.path && req.path.startsWith('/socket.io')) {
+      return next();
+    }
+    return middleware(req, res, next);
+  };
+
   // Set security HTTP headers
   app.use(setSecurityHeaders());
   
@@ -104,11 +119,11 @@ export const setupSecurity = (app) => {
   // Body parser, reading data from body into req.body
   app.use(express.json({ limit: '10kb' }));
   
-  // Data sanitization against NoSQL query injection
-  app.use(sanitize);
+  // Data sanitization against NoSQL query injection (Express 5-safe)
+  app.use(skipForSocketIO(sanitizeRequest));
   
   // Data sanitization against XSS
-  app.use(preventXSS);
+  app.use(skipForSocketIO(xssSanitizeRequest));
   
   // Prevent parameter pollution
   app.use(preventParamPollution);

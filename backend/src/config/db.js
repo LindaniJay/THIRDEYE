@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { createLogger } from 'winston';
+import { createLogger, format, transports } from 'winston';
 
 const logger = createLogger({
   level: 'info',
@@ -15,9 +15,11 @@ const logger = createLogger({
 
 export const connectDB = async () => {
   try {
+    if (!process.env.MONGO_URI) {
+      logger.warn('MONGO_URI is not set. Skipping MongoDB connection.');
+      return;
+    }
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
     });
 
@@ -45,13 +47,9 @@ export const connectDB = async () => {
 
   } catch (error) {
     logger.error(`Error connecting to MongoDB: ${error.message}`);
-    process.exit(1);
+    // non-fatal during local debug
   }
 };
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  logger.error(`Unhandled Rejection: ${err.message}`);
-  // Close server & exit process
-  server.close(() => process.exit(1));
-});
+// Handled centrally in server.js

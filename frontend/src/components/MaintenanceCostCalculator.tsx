@@ -75,7 +75,6 @@ const DEPRECIATION_RATES: Record<string, number> = {
   'Luxury': 25
 };
 
-const vehicleTypes = ['Hatchback', 'Sedan', 'SUV', 'Bakkie', 'Luxury', 'Electric'];
 
 const MaintenanceCostCalculator: React.FC = () => {
   const [make, setMake] = useState('');

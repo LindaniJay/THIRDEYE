@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaSearch, FaCar, FaCalendarAlt, FaInfoCircle } from 'react-icons/fa';
+import { FaSearch, FaCar, FaInfoCircle } from 'react-icons/fa';
 
 interface HistoryReport {
   vin: string;

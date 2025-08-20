@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\sa\\Downloads\\THIRDEYE\\backend\\src\\logs\\.9c4408a6b981dc497410bf7960f0dd9aa3824e13-audit.json",
+    "files": [
+        {
+            "date": 1755678870016,
+            "name": "C:\\Users\\sa\\Downloads\\THIRDEYE\\backend\\src\\logs\\combined-2025-08-20.log",
+            "hash": "a90346dc2ddf61f50a793d001f19a4b52d8ab1cc4663b6381df072dc8220d3b9"
+        }
+    ],
+    "hashType": "sha256"
+}

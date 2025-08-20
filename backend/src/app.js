@@ -1,8 +1,6 @@
 import express from 'express';
-import 'express-async-errors';
 import { setupSecurity } from './middleware/security.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
-import { connectDB } from './config/db.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,14 +11,13 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Connect to MongoDB
-connectDB();
+// DB connection is initiated in server.js to avoid double-connecting
 
 // Security middleware
 setupSecurity(app);
 
-// Static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Static files (serve from backend/public)
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Test route
 app.get('/api/health', (req, res) => {
@@ -33,13 +30,15 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 import inspectionRoutes from './routes/inspection.routes.js';
+import bookingRoutes from './routes/booking.routes.js';
 
 // app.use('/api/users', userRoutes);
 // app.use('/api/services', serviceRoutes);
 app.use('/api/inspections', inspectionRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 // Handle 404 - must be after all other routes
-app.all('*', notFound);
+app.use(notFound);
 
 // Global error handler - must be after all other middleware
 app.use(errorHandler);

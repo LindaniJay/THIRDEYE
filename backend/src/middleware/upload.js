@@ -1,4 +1,5 @@
 ﻿import multer from 'multer';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -6,9 +7,18 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const uploadsDir = path.join(__dirname, '../../public/uploads/');
+
+// Ensure upload directory exists at runtime
+try {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+} catch (_err) {
+  // non-fatal
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../public/uploads/'));
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

@@ -1,7 +1,5 @@
-import 'express-async-errors';
 import 'dotenv/config';
 import http from 'http';
-import mongoose from 'mongoose';
 import { createLogger, format, transports } from 'winston';
 import app from './app.js';
 import { connectDB } from './config/db.js';

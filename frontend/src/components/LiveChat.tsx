@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiMessageCircle, FiX, FiSend } from 'react-icons/fi';
 // @ts-ignore - Importing default export
-import io from 'socket.io-client';
+import { io } from 'socket.io-client';
 // @ts-ignore - Socket type is available in socket.io-client
 type Socket = any;
 

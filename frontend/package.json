@@ -39,7 +39,7 @@
   "scripts": {
     "eject": "react-scripts eject",
     "test": "react-scripts test",
-    "build": "react-scripts build",
+    "build": "cross-env CI=false react-scripts build",
     "start": "react-scripts start",
     "vercel-build": "npm install && npm run build"
   },
@@ -69,6 +69,7 @@
     ]
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "@resvg/resvg-js": "^2.6.2",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",

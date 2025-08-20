@@ -1,10 +1,9 @@
-# Car Sourcing App - Backend
+# THIRDEYE Backend
 
-This is the backend service for the Car Sourcing application, built with Node.js, Express, and MongoDB.
+Node.js + Express + MongoDB backend for THIRDEYE.
 
 ## Features
 
-- Secure authentication with JWT
 - Rate limiting and request validation
 - File uploads
 - Comprehensive error handling
@@ -33,26 +32,7 @@ This is the backend service for the Car Sourcing application, built with Node.js
    ```
 
 3. **Environment Variables**
-   Create a `.env` file in the root directory and add the following variables:
-   ```env
-   # Server Configuration
-   PORT=5000
-   NODE_ENV=development
-   
-   # Database
-   MONGO_URI=mongodb://localhost:27017/car-sourcing
-   
-   # Security
-   JWT_SECRET=your_secure_jwt_secret
-   JWT_EXPIRES_IN=30d
-   
-   # File Uploads
-   UPLOAD_DIR=./public/uploads
-   MAX_FILE_SIZE=5MB
-   
-   # CORS
-   FRONTEND_URL=http://localhost:3000
-   ```
+   Create a `.env` file in `backend/` based on `.env.example`.
 
 4. **Create required directories**
    ```bash
@@ -71,20 +51,17 @@ npm run dev
 npm start
 ```
 
-## API Documentation
+## API Endpoints
 
-API documentation is available at `/api-docs` when running in development mode.
-
-## Testing
-
-Run tests with:
-```bash
-npm test
-```
+- `GET /api/health` – server health
+- `GET /api/inspections` – inspection counter
+- `POST /api/inspections/increment` – increment counter
+- `POST /api/bookings` – create booking (multipart form-data)
+- `GET /api/bookings` – list bookings
 
 ## Environment Variables
 
-See `.env.example` for all available environment variables and their descriptions.
+See `.env.example` for available environment variables.
 
 ## Contributing
 

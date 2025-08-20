@@ -87,7 +87,8 @@ const BookingForm: FC = () => {
       });
 
       // Send to backend
-      await axios.post('http://localhost:5000/api/bookings', formData, {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      await axios.post(`${API_BASE}/api/bookings`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

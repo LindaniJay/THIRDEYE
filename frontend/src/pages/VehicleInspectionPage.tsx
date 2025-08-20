@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaCar, FaCarCrash, FaTools, FaClipboardCheck, FaShieldAlt, FaSearch } from 'react-icons/fa';
+import { FaCar, FaCarCrash, FaTools, FaClipboardCheck, FaSearch } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import InspectorCertifications from '../components/InspectorCertifications';
 import MaintenanceCostCalculator from '../components/MaintenanceCostCalculator';
