@@ -248,19 +248,19 @@ const LiveChat: React.FC = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (newMessage.trim() && isConnected) {
+                if (newMessage.trim()) {
                   handleSendMessage(e);
                 }
               }
             }}
-            placeholder="Type your message..."
+            placeholder={isConnected ? "Type your message..." : "Chat offline. You can still type; sending is disabled."}
             className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={!isConnected}
+            disabled={false}
           />
           <button
             type="submit"
             className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            disabled={!newMessage.trim() || !isConnected}
+            disabled={!newMessage.trim()}
           >
             <FiSend size={18} />
           </button>
