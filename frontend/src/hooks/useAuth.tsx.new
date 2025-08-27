@@ -1,0 +1,152 @@
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { 
+  User as FirebaseUser,
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  updateProfile,
+  UserCredential
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase/config';
+
+type UserRole = 'client' | 'admin';
+
+interface AuthContextType {
+  currentUser: FirebaseUser | null;
+  userRole: UserRole | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<UserCredential>;
+  signUp: (email: string, password: string, displayName: string) => Promise<UserCredential>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updateUserProfile: (data: { displayName?: string; photoURL?: string }) => Promise<void>;
+  isAdmin: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(true);
+  const isAdmin = userRole === 'admin';
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setUserRole(data.role || 'client');
+          } else {
+            // Create user document if it doesn't exist
+            await setDoc(doc(db, 'users', user.uid), {
+              email: user.email,
+              displayName: user.displayName || '',
+              role: 'client',
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+            setUserRole('client');
+          }
+        } catch (error) {
+          console.error('Error getting user document:', error);
+          setUserRole('client');
+        }
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signUp = async (email: string, password: string, displayName: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(userCredential.user, { displayName });
+    
+    // Create user document in Firestore
+    await setDoc(doc(db, 'users', userCredential.user.uid), {
+      email,
+      displayName,
+      role: 'client',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    // Send email verification
+    await sendEmailVerification(userCredential.user);
+    
+    return userCredential;
+  };
+
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+  };
+
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
+  const updateUserProfile = async (data: { displayName?: string; photoURL?: string }) => {
+    if (!auth.currentUser) return;
+    await updateProfile(auth.currentUser, data);
+    
+    // Update user document in Firestore
+    const updateData: { [key: string]: any } = { updatedAt: serverTimestamp() };
+    if (data.displayName) updateData.displayName = data.displayName;
+    if (data.photoURL) updateData.photoURL = data.photoURL;
+    
+    await setDoc(doc(db, 'users', auth.currentUser.uid), updateData, { merge: true });
+    
+    // Update local state
+    setCurrentUser({
+      ...auth.currentUser,
+      displayName: data.displayName || auth.currentUser.displayName,
+      photoURL: data.photoURL || auth.currentUser.photoURL
+    });
+  };
+
+  const value = {
+    currentUser,
+    userRole,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword,
+    updateUserProfile,
+    isAdmin
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

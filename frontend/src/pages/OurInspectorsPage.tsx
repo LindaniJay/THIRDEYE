@@ -1,6 +1,7 @@
 import React from 'react';
 import InspectorCertifications from '../components/InspectorCertifications';
-import { FaUserTie, FaShieldAlt, FaCar, FaClipboardCheck } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserTie, faShieldHalved, faCar, faClipboardCheck } from '@fortawesome/free-solid-svg-icons';
 
 const OurInspectorsPage: React.FC = () => {
   return (
@@ -32,22 +33,22 @@ const OurInspectorsPage: React.FC = () => {
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                icon: <FaUserTie className="h-10 w-10 text-blue-600" />,
+                icon: <FontAwesomeIcon icon={faUserTie} className="h-10 w-10 text-blue-600" />,
                 title: 'Professional',
                 description: 'Our inspectors are trained professionals with years of experience in the automotive industry.'
               },
               {
-                icon: <FaShieldAlt className="h-10 w-10 text-blue-600" />,
+                icon: <FontAwesomeIcon icon={faShieldHalved} className="h-10 w-10 text-blue-600" />,
                 title: 'Certified',
                 description: 'All our inspectors hold multiple industry certifications and undergo regular training.'
               },
               {
-                icon: <FaCar className="h-10 w-10 text-blue-600" />,
+                icon: <FontAwesomeIcon icon={faCar} className="h-10 w-10 text-blue-600" />,
                 title: 'Thorough',
                 description: 'We perform a comprehensive 150+ point inspection on every vehicle we examine.'
               },
               {
-                icon: <FaClipboardCheck className="h-10 w-10 text-blue-600" />,
+                icon: <FontAwesomeIcon icon={faClipboardCheck} className="h-10 w-10 text-blue-600" />,
                 title: 'Detailed Reports',
                 description: 'Receive a complete report with photos and detailed explanations of our findings.'
               }

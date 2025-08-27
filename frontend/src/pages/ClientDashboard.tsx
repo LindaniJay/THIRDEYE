@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FiCalendar, FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCalendar, faCheckCircle, faClock, faDollarSign } from '@fortawesome/free-solid-svg-icons';
 
 interface Inspection {
   id: string;
@@ -71,25 +72,25 @@ const ClientDashboard: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard 
-            icon={<FiCalendar className="h-6 w-6" />} 
+            icon={<FontAwesomeIcon icon={faCalendar} className="h-6 w-6" />} 
             title="Upcoming" 
             value={inspections.filter(i => i.status === 'scheduled').length}
             color="blue"
           />
           <StatCard 
-            icon={<FiCheckCircle className="h-6 w-6" />} 
+            icon={<FontAwesomeIcon icon={faCheckCircle} className="h-6 w-6" />} 
             title="Completed" 
             value={completed.length}
             color="green"
           />
           <StatCard 
-            icon={<FiClock className="h-6 w-6" />} 
+            icon={<FontAwesomeIcon icon={faClock} className="h-6 w-6" />} 
             title="In Progress" 
             value={inspections.filter(i => i.status === 'in-progress').length}
             color="yellow"
           />
           <StatCard 
-            icon={<FiDollarSign className="h-6 w-6" />} 
+            icon={<FontAwesomeIcon icon={faDollarSign} className="h-6 w-6" />} 
             title="Total Spent" 
             value={`$${totalSpent.toFixed(2)}`}
             color="indigo"
@@ -168,20 +169,32 @@ const ClientDashboard: React.FC = () => {
   );
 };
 
-const StatCard = ({ icon, title, value, color = 'gray' }: { icon: React.ReactNode; title: string; value: string | number; color?: string }) => {
+interface StatCardProps {
+  icon: React.ReactElement;
+  title: string;
+  value: string | number;
+  color?: 'blue' | 'green' | 'yellow' | 'indigo' | 'gray';
+}
+
+const StatCard = ({ icon, title, value, color = 'gray' }: StatCardProps) => {
   const colorMap = {
-    blue: 'bg-blue-500',
-    green: 'bg-green-500',
-    yellow: 'bg-yellow-500',
-    indigo: 'bg-indigo-500',
-    gray: 'bg-gray-500'
-  };
+    blue: { bg: 'bg-blue-500', text: 'text-blue-500' },
+    green: { bg: 'bg-green-500', text: 'text-green-500' },
+    yellow: { bg: 'bg-yellow-500', text: 'text-yellow-500' },
+    indigo: { bg: 'bg-indigo-500', text: 'text-indigo-500' },
+    gray: { bg: 'bg-gray-500', text: 'text-gray-500' }
+  } as const;
+
+  const iconWithClass = React.cloneElement(icon, {
+    // @ts-ignore - The FontAwesomeIcon component accepts a className prop
+    className: `${colorMap[color].text} h-6 w-6`
+  });
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center">
-        <div className={`p-3 rounded-full ${colorMap[color as keyof typeof colorMap]} bg-opacity-10`}>
-          {React.cloneElement(icon as React.ReactElement, { className: `${colorMap[color as keyof typeof colorMap].replace('bg-', 'text-')} h-6 w-6` })}
+        <div className={`p-3 rounded-full ${colorMap[color].bg} bg-opacity-10`}>
+          {iconWithClass}
         </div>
         <div className="ml-4">
           <p className="text-sm font-medium text-gray-500">{title}</p>

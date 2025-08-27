@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1770&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #1a202c; /* fallback color */
+}
+
+@import "slick-carousel/slick/slick.css";
+@import "slick-carousel/slick/slick-theme.css";
+
+@layer components {
+  .glass {
+    @apply bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl;
+  }
+  .btn-primary {
+    @apply bg-bright-orange hover:opacity-90 text-white font-medium py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg;
+  }
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg bg-dark-gray/50 border border-white/20 focus:ring-2 focus:ring-cyan focus:border-transparent transition-all;
+  }
+}

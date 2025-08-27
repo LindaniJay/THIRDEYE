@@ -1,6 +1,7 @@
 import React from 'react';
 import MaintenanceCostCalculator from '../components/MaintenanceCostCalculator';
-import { FaCalculator, FaCar, FaTools, FaInfoCircle } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCalculator, faCar, faTools, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 
 const MaintenanceCostPage: React.FC = () => {
   return (
@@ -9,7 +10,7 @@ const MaintenanceCostPage: React.FC = () => {
       <div className="bg-gradient-to-r from-blue-700 to-blue-600">
         <div className="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-6">
-            <FaCalculator className="h-8 w-8 text-blue-600" />
+            <FontAwesomeIcon icon={faCalculator} className="h-8 w-8 text-blue-600" />
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
             Vehicle Maintenance Cost Calculator
@@ -36,7 +37,7 @@ const MaintenanceCostPage: React.FC = () => {
               <div className="p-6">
                 <div className="flex items-center mb-4">
                   <div className="flex-shrink-0 bg-blue-100 p-3 rounded-md">
-                    <FaCar className="h-6 w-6 text-blue-600" />
+                    <FontAwesomeIcon icon={faCar} className="h-6 w-6 text-blue-600" />
                   </div>
                   <h3 className="ml-3 text-lg font-medium text-gray-900">Understanding Ownership Costs</h3>
                 </div>
@@ -62,7 +63,7 @@ const MaintenanceCostPage: React.FC = () => {
               <div className="p-6">
                 <div className="flex items-center mb-4">
                   <div className="flex-shrink-0 bg-blue-100 p-3 rounded-md">
-                    <FaTools className="h-6 w-6 text-blue-600" />
+                    <FontAwesomeIcon icon={faTools} className="h-6 w-6 text-blue-600" />
                   </div>
                   <h3 className="ml-3 text-lg font-medium text-gray-900">Maintenance Tips</h3>
                 </div>
@@ -88,7 +89,7 @@ const MaintenanceCostPage: React.FC = () => {
           {/* Disclaimer */}
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
             <div className="flex">
-              <FaInfoCircle className="h-5 w-5 text-blue-400 flex-shrink-0" />
+              <FontAwesomeIcon icon={faInfoCircle} className="h-6 w-6 text-blue-600" />
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-blue-800">Important Note</h3>
                 <div className="mt-2 text-sm text-blue-700">

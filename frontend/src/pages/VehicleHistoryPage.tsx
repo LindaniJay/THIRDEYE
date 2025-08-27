@@ -1,6 +1,7 @@
 import React from 'react';
 import VehicleHistoryLookup from '../components/VehicleHistoryLookup';
-import { FaCar, FaShieldAlt, FaFileAlt } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCar, faShieldHalved, faFileLines } from '@fortawesome/free-solid-svg-icons';
 
 const VehicleHistoryPage: React.FC = () => {
   return (
@@ -28,17 +29,17 @@ const VehicleHistoryPage: React.FC = () => {
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 {
-                  icon: <FaCar className="h-10 w-10 text-blue-600" />,
+                  icon: <FontAwesomeIcon icon={faCar} className="h-10 w-10 text-blue-600" />,
                   title: 'Accident History',
                   description: 'Discover if the vehicle has been in any reported accidents and the extent of the damage.'
                 },
                 {
-                  icon: <FaShieldAlt className="h-10 w-10 text-blue-600" />,
+                  icon: <FontAwesomeIcon icon={faShieldHalved} className="h-10 w-10 text-blue-600" />,
                   title: 'Title Status',
                   description: 'Verify if the title is clean, salvaged, rebuilt, or has any other brand that could affect value.'
                 },
                 {
-                  icon: <FaFileAlt className="h-10 w-10 text-blue-600" />,
+                  icon: <FontAwesomeIcon icon={faFileLines} className="h-10 w-10 text-blue-600" />,
                   title: 'Service Records',
                   description: 'View reported service history to understand how well the vehicle has been maintained.'
                 }

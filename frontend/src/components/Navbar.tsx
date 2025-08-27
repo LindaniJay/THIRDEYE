@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBars, faXmark } from '@fortawesome/free-solid-svg-icons';
+import AuthButton from './AuthButton';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -67,7 +69,7 @@ const Navbar: React.FC = () => {
               <NavLink
                 key={link.to}
                 to={link.to}
-                className={({ isActive }) => 
+                className={(isActive) => 
                   `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive 
                       ? 'bg-gray-800 text-white' 
@@ -78,6 +80,9 @@ const Navbar: React.FC = () => {
                 {link.text}
               </NavLink>
             ))}
+            <div className="ml-4">
+              <AuthButton />
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -88,11 +93,11 @@ const Navbar: React.FC = () => {
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
-              {isOpen ? (
-                <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
-              ) : (
-                <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
-              )}
+              <FontAwesomeIcon 
+                icon={isOpen ? faXmark : faBars} 
+                className="block h-6 w-6" 
+                aria-hidden="true" 
+              />
             </button>
           </div>
         </div>
@@ -115,7 +120,7 @@ const Navbar: React.FC = () => {
               <NavLink
                 key={link.to}
                 to={link.to}
-                className={({ isActive }) =>
+                className={(isActive) =>
                   `block px-3 py-2 rounded-md text-base font-medium ${
                     isActive
                       ? 'bg-gray-800 text-white'

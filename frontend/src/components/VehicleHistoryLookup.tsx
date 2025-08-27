@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { FaSearch, FaCar, FaInfoCircle } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faSearch, 
+  faCar, 
+  faCircleInfo
+} from '@fortawesome/free-solid-svg-icons';
 
 interface HistoryReport {
   vin: string;
@@ -79,7 +84,7 @@ const VehicleHistoryLookup: React.FC = () => {
       
       <div className="bg-blue-50/80 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
         <div className="flex items-start">
-          <FaInfoCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <FontAwesomeIcon icon={faCircleInfo} className="w-4 h-4 text-blue-500" />
           <p className="ml-3 text-sm font-medium text-blue-800">
             Enter your vehicle's 17-digit VIN to get a detailed history report.
           </p>
@@ -89,7 +94,7 @@ const VehicleHistoryLookup: React.FC = () => {
       <form onSubmit={handleLookup} className="mb-8">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-grow">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={vin}
@@ -104,7 +109,7 @@ const VehicleHistoryLookup: React.FC = () => {
             disabled={isLoading}
             className="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 transition-all duration-200"
           >
-            {isLoading ? 'Searching...' : <><FaSearch className="mr-2" /> Search</>}
+            {isLoading ? 'Searching...' : <><FontAwesomeIcon icon={faSearch} className="mr-2" /> Search</>}
           </button>
         </div>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -113,7 +118,7 @@ const VehicleHistoryLookup: React.FC = () => {
       {!report ? (
         <div className="text-center py-12 px-4">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-4">
-            <FaCar className="h-8 w-8 text-blue-600" />
+            <FontAwesomeIcon icon={faCar} className="w-8 h-8 text-blue-700" />
           </div>
           <h3 className="mt-2 text-xl font-semibold text-gray-900">No vehicle history report</h3>
           <p className="mt-2 text-gray-600 max-w-md mx-auto">Enter a VIN to get started or view a sample report.</p>
@@ -128,7 +133,7 @@ const VehicleHistoryLookup: React.FC = () => {
         <div className="bg-white/95 rounded-xl shadow-sm p-6 text-gray-800 border border-gray-100">
           <div className="flex flex-col sm:flex-row items-start sm:items-center mb-8">
             <div className="bg-blue-100 p-4 rounded-xl shadow-inner mb-4 sm:mb-0 sm:mr-6">
-              <FaCar className="h-8 w-8 text-blue-700" />
+              <FontAwesomeIcon icon={faCar} className="h-8 w-8 text-blue-700" />
             </div>
             <div>
               <h3 className="text-2xl font-bold text-gray-900">{report.year} {report.make} {report.model}</h3>
@@ -137,7 +142,7 @@ const VehicleHistoryLookup: React.FC = () => {
                   <p>Last reported: {new Date(report.lastReportedDate).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   {showSample && (
                     <div className="mt-2 sm:mt-0 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-lg inline-flex items-center">
-                      <FaInfoCircle className="mr-2 flex-shrink-0" />
+                      <FontAwesomeIcon icon={faCircleInfo} className="mr-2 flex-shrink-0" />
                       <span>This is a sample report for demonstration purposes.</span>
                     </div>
                   )}

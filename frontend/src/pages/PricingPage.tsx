@@ -4,16 +4,56 @@ import { NavLink } from 'react-router-dom';
 
 const pricingOptions = [
   {
-    title: 'Vehicle Inspection',
-    price: '1,500',
-    features: ['200+ point mechanical check', 'Full diagnostic scan', 'Body and chassis inspection', 'Digital report with photos for KZN buyers'],
-    cta: 'Book Now',
+    title: 'Vehicle Inspections',
+    price: '800',
+    features: [
+      '200+ point inspection',
+      'Mechanical & electrical assessment',
+      'Accident & flood damage check',
+      'Service history verification',
+      'Test drive evaluation',
+      'Detailed digital report with photos'
+    ],
+    cta: 'Book Inspection',
   },
   {
-    title: 'Rental Property Inspection',
-    price: '1,000',
-    features: ['Pre-lease condition assessment', 'Plumbing and electrical checks', 'Photos and video of the property', 'Peace of mind for your move to KZN'],
-    cta: 'Book Now',
+    title: 'New Car Consultation',
+    price: '500',
+    features: [
+      'Market value assessment',
+      'Model comparison',
+      'Feature analysis',
+      'Negotiation tips',
+      'Dealership recommendations',
+      'Financing & warranty advice'
+    ],
+    cta: 'Get Consultation',
+  },
+  {
+    title: 'Rental Property Inspections',
+    price: '600',
+    features: [
+      'Detailed condition report',
+      'High-resolution photos',
+      'Plumbing & electrical checks',
+      'Appliance testing',
+      'Safety compliance check',
+      'Meter readings verification'
+    ],
+    cta: 'Book Inspection',
+  },
+  {
+    title: 'Holiday Accommodation',
+    price: '700',
+    features: [
+      'Pre-arrival verification',
+      'Facilities and amenities check',
+      'Cleanliness and safety inspection',
+      'Photo documentation',
+      'Listing comparison',
+      'Detailed inspection report'
+    ],
+    cta: 'Book Inspection',
   },
 ];
 

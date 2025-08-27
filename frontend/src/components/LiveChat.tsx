@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiMessageCircle, FiX, FiSend } from 'react-icons/fi';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMessage, faXmark, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 // @ts-ignore - Importing default export
 import { io } from 'socket.io-client';
 // @ts-ignore - Socket type is available in socket.io-client
@@ -155,7 +156,7 @@ const LiveChat: React.FC = () => {
         className="fixed bottom-8 right-8 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
         aria-label="Open chat"
       >
-        <FiMessageCircle size={24} />
+        <FontAwesomeIcon icon={faMessage} className="h-6 w-6" />
       </button>
     );
   }
@@ -174,7 +175,7 @@ const LiveChat: React.FC = () => {
               className="text-white hover:text-gray-200"
               aria-label="Close chat"
             >
-              <FiX size={18} />
+              <FontAwesomeIcon icon={faXmark} size={18} />
             </button>
           </div>
         </div>
@@ -201,7 +202,7 @@ const LiveChat: React.FC = () => {
             className="text-white hover:text-gray-200 p-1"
             aria-label="Close chat"
           >
-            <FiX size={20} />
+            <FontAwesomeIcon icon={faXmark} size={20} />
           </button>
         </div>
       </div>
@@ -221,6 +222,7 @@ const LiveChat: React.FC = () => {
             >
               <p className="text-sm">{message.text}</p>
               <p className="text-xs text-gray-500 mt-1">
+                <FontAwesomeIcon icon={faPaperPlane} className="h-5 w-5 text-blue-600" />
                 {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
@@ -262,7 +264,7 @@ const LiveChat: React.FC = () => {
             className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             disabled={!newMessage.trim()}
           >
-            <FiSend size={18} />
+            <FontAwesomeIcon icon={faPaperPlane} className="h-5 w-5" />
           </button>
         </div>
       </form>

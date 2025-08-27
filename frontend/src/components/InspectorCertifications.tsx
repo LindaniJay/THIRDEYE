@@ -1,5 +1,12 @@
 import React from 'react';
-import { FaCertificate, FaCarCrash, FaTools, FaUserTie, FaShieldAlt } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faCertificate, 
+  faCarCrash, 
+  faScrewdriverWrench, 
+  faUserTie, 
+  faShieldHalved 
+} from '@fortawesome/free-solid-svg-icons';
 
 interface Certification {
   id: string;
@@ -18,7 +25,7 @@ const InspectorCertifications: React.FC = () => {
       issuer: 'National Institute for Automotive Service Excellence',
       year: 2022,
       description: 'Demonstrates expertise in all areas of automotive repair and service.',
-      icon: <FaCertificate className="w-8 h-8 text-blue-600" />
+      icon: <FontAwesomeIcon icon={faCertificate} className="w-5 h-5 text-blue-500" />
     },
     {
       id: '2',
@@ -26,7 +33,7 @@ const InspectorCertifications: React.FC = () => {
       issuer: 'I-CAR',
       year: 2023,
       description: 'Specialized training in vehicle collision damage assessment and repair.',
-      icon: <FaCarCrash className="w-8 h-8 text-blue-600" />
+      icon: <FontAwesomeIcon icon={faCarCrash} className="w-8 h-8 text-blue-600" />
     },
     {
       id: '3',
@@ -34,7 +41,7 @@ const InspectorCertifications: React.FC = () => {
       issuer: 'Automotive Training Center',
       year: 2021,
       description: 'Expertise in modern vehicle computer systems and diagnostics.',
-      icon: <FaTools className="w-8 h-8 text-blue-600" />
+      icon: <FontAwesomeIcon icon={faScrewdriverWrench} className="w-8 h-8 text-blue-600" />
     },
     {
       id: '4',
@@ -42,7 +49,7 @@ const InspectorCertifications: React.FC = () => {
       issuer: 'National Association of Certified Vehicle Inspectors',
       year: 2023,
       description: 'Certified to perform comprehensive vehicle inspections to industry standards.',
-      icon: <FaUserTie className="w-8 h-8 text-blue-600" />
+      icon: <FontAwesomeIcon icon={faUserTie} className="w-8 h-8 text-blue-600" />
     },
     {
       id: '5',
@@ -50,7 +57,7 @@ const InspectorCertifications: React.FC = () => {
       issuer: 'State Vehicle Inspection Board',
       year: 2023,
       description: 'Certified to perform state-required safety inspections.',
-      icon: <FaShieldAlt className="w-8 h-8 text-blue-600" />
+      icon: <FontAwesomeIcon icon={faShieldHalved} className="w-8 h-8 text-blue-600" />
     }
   ];
 

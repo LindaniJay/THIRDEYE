@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaCar, FaTools, FaGasPump, FaDollarSign, FaInfoCircle } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faCar, 
+  faScrewdriverWrench, 
+  faGasPump, 
+  faDollarSign, 
+  faCircleInfo 
+} from '@fortawesome/free-solid-svg-icons';
 
 // South African vehicle makes and models
 const MAKES = [
@@ -295,7 +302,7 @@ const MaintenanceCostCalculator: React.FC = () => {
           
           <div className="bg-blue-50/80 p-4 rounded-lg border border-blue-100">
             <div className="flex">
-              <FaInfoCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <FontAwesomeIcon icon={faCircleInfo} className="w-4 h-4 text-gray-400" />
               <p className="ml-3 text-sm text-blue-800">
                 This calculator provides estimates based on average costs. Your actual costs may vary based on location, driving habits, and vehicle condition.
               </p>
@@ -320,7 +327,7 @@ const MaintenanceCostCalculator: React.FC = () => {
                     </p>
                   </div>
                   <div className="bg-blue-600/20 p-3 rounded-full">
-                    <FaDollarSign className="h-8 w-8 text-blue-400" />
+                    <FontAwesomeIcon icon={faDollarSign} className="w-5 h-5 text-blue-500" />
                   </div>
                 </div>
               </div>
@@ -330,7 +337,7 @@ const MaintenanceCostCalculator: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <div className="flex items-center">
-                      <FaTools className="h-4 w-4 text-gray-400 mr-2" />
+                      <FontAwesomeIcon icon={faScrewdriverWrench} className="w-5 h-5 text-blue-500" />
                       <span>Maintenance & Repairs</span>
                     </div>
                     <span>{formatCurrency(results.maintenanceCost)}</span>
@@ -338,7 +345,7 @@ const MaintenanceCostCalculator: React.FC = () => {
                   
                   <div className="flex justify-between text-sm">
                     <div className="flex items-center">
-                      <FaGasPump className="h-4 w-4 text-gray-400 mr-2" />
+                      <FontAwesomeIcon icon={faGasPump} className="w-5 h-5 text-blue-500" />
                       <span>Fuel</span>
                     </div>
                     <span>{formatCurrency(results.fuelCost)}</span>
@@ -346,7 +353,7 @@ const MaintenanceCostCalculator: React.FC = () => {
                   
                   <div className="flex justify-between text-sm">
                     <div className="flex items-center">
-                      <FaCar className="h-4 w-4 text-gray-400 mr-2" />
+                      <FontAwesomeIcon icon={faCar} className="w-5 h-5 text-blue-500" />
                       <span>Insurance</span>
                     </div>
                     <span>{formatCurrency(results.insuranceCost)}</span>
@@ -354,7 +361,7 @@ const MaintenanceCostCalculator: React.FC = () => {
                   
                   <div className="flex justify-between text-sm">
                     <div className="flex items-center">
-                      <FaDollarSign className="h-4 w-4 text-gray-400 mr-2" />
+                      <FontAwesomeIcon icon={faDollarSign} className="h-4 w-4 text-gray-400 mr-2" />
                       <span>Depreciation</span>
                     </div>
                     <span>-{formatCurrency(results.depreciation)}</span>
@@ -384,7 +391,7 @@ const MaintenanceCostCalculator: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <FaCar className="mx-auto h-12 w-12 text-gray-400" />
+              <FontAwesomeIcon icon={faCar} className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No results yet</h3>
               <p className="mt-1 text-sm text-gray-500">Enter your vehicle details to see cost estimates.</p>
             </div>

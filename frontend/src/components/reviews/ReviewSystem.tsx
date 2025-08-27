@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { FaStar, FaStarHalfAlt, FaRegStar, FaCamera, FaUser } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faStar as solidStar, 
+  faStarHalfAlt as halfStar, 
+  faStar as regularStar, 
+  faCamera, 
+  faUser,
+  faStarHalfStroke
+} from '@fortawesome/free-solid-svg-icons';
+import { faStar as farStar } from '@fortawesome/free-regular-svg-icons';
 
 interface Review {
   id: string;
@@ -103,21 +112,17 @@ const ReviewSystem: React.FC = () => {
   };
 
   const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    
-    for (let i = 1; i <= 5; i++) {
-      if (i <= fullStars) {
-        stars.push(<FaStar key={i} className="text-yellow-400" />);
-      } else if (i === fullStars + 1 && hasHalfStar) {
-        stars.push(<FaStarHalfAlt key={i} className="text-yellow-400" />);
-      } else {
-        stars.push(<FaRegStar key={i} className="text-yellow-400" />);
-      }
-    }
-    
-    return stars;
+    return [1, 2, 3, 4, 5].map((star) => (
+      <span key={star}>
+        {star <= Math.floor(rating) ? (
+          <FontAwesomeIcon icon={solidStar} className="text-yellow-400 w-5 h-5" />
+        ) : star - 0.5 <= rating ? (
+          <FontAwesomeIcon icon={faStarHalfStroke} className="text-yellow-400 w-5 h-5" />
+        ) : (
+          <FontAwesomeIcon icon={farStar} className="text-yellow-400 w-5 h-5" />
+        )}
+      </span>
+    ));
   };
 
   return (
@@ -140,20 +145,19 @@ const ReviewSystem: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Your Rating</label>
               <div className="flex space-x-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <button
+                  <span
                     key={star}
-                    type="button"
-                    className="text-2xl focus:outline-none"
-                    onClick={() => handleRatingClick(star)}
+                    className="cursor-pointer"
+                    onClick={() => setNewReview({ ...newReview, rating: star })}
                     onMouseEnter={() => setHoverRating(star)}
                     onMouseLeave={() => setHoverRating(0)}
                   >
                     {star <= (hoverRating || newReview.rating) ? (
-                      <FaStar className="text-yellow-400" />
+                      <FontAwesomeIcon icon={solidStar} className="text-yellow-400 w-6 h-6" />
                     ) : (
-                      <FaRegStar className="text-yellow-400" />
+                      <FontAwesomeIcon icon={farStar} className="text-gray-300 w-6 h-6" />
                     )}
-                  </button>
+                  </span>
                 ))}
               </div>
             </div>
@@ -257,7 +261,7 @@ const ReviewSystem: React.FC = () => {
                   </div>
                 ))}
                 <label className="flex flex-col items-center justify-center w-20 h-20 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:border-blue-500 transition-colors">
-                  <FaCamera className="text-gray-400 mb-1" />
+                  <FontAwesomeIcon icon={faCamera} className="w-4 h-4 mr-1" />
                   <span className="text-xs text-gray-500">Add</span>
                   <input
                     type="file"
@@ -296,7 +300,7 @@ const ReviewSystem: React.FC = () => {
             <div className="flex justify-between items-start">
               <div className="flex items-center mb-2">
                 <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                  <FaUser className="text-gray-500" />
+                  <FontAwesomeIcon icon={faUser} className="w-10 h-10 text-gray-300" />
                 </div>
                 <div>
                   <h4 className="font-medium">{review.userName}</h4>

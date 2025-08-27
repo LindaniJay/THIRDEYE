@@ -1,5 +1,12 @@
 import React from 'react';
-import { FaCar, FaCarCrash, FaTools, FaClipboardCheck, FaSearch } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faCar, 
+  faCarCrash, 
+  faScrewdriverWrench, 
+  faClipboardCheck, 
+  faMagnifyingGlass 
+} from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import InspectorCertifications from '../components/InspectorCertifications';
 import MaintenanceCostCalculator from '../components/MaintenanceCostCalculator';
@@ -10,7 +17,7 @@ const VehicleInspectionPage: React.FC = () => {
   const inspectionPoints = [
     {
       title: 'Exterior Inspection',
-      icon: <FaCar className="w-6 h-6" />,
+      icon: <FontAwesomeIcon icon={faCar} className="w-6 h-6" />,
       items: [
         'Body condition and paintwork (checking for accident damage common on SA roads)',
         'Tire condition and tread depth (including spare wheel and jack)',
@@ -21,7 +28,7 @@ const VehicleInspectionPage: React.FC = () => {
     },
     {
       title: 'Interior Inspection',
-      icon: <FaClipboardCheck className="w-6 h-6" />,
+      icon: <FontAwesomeIcon icon={faClipboardCheck} className="w-6 h-6" />,
       items: [
         'Upholstery and trim condition (checking for flood damage)',
         'Dashboard and controls (including air conditioning for SA heat)',
@@ -32,7 +39,7 @@ const VehicleInspectionPage: React.FC = () => {
     },
     {
       title: 'Mechanical Inspection',
-      icon: <FaTools className="w-6 h-6" />,
+      icon: <FontAwesomeIcon icon={faScrewdriverWrench} className="w-6 h-6" />,
       items: [
         'Engine performance',
         'Transmission operation',
@@ -43,7 +50,7 @@ const VehicleInspectionPage: React.FC = () => {
     },
     {
       title: 'Test Drive',
-      icon: <FaCarCrash className="w-6 h-6" />,
+      icon: <FontAwesomeIcon icon={faCarCrash} className="w-6 h-6" />,
       items: [
         'Engine start and idle (checking for cold start issues)',
         'Acceleration and power delivery (testing on hills common in KZN)',
@@ -94,9 +101,7 @@ const VehicleInspectionPage: React.FC = () => {
                 <ul className="space-y-2">
                   {section.items.map((item, i) => (
                     <li key={i} className="flex items-start">
-                      <svg className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
+                      <FontAwesomeIcon icon={faMagnifyingGlass} className="w-4 h-4 mr-2 text-green-400" />
                       <span className="text-gray-300">{item}</span>
                     </li>
                   ))}
@@ -111,7 +116,7 @@ const VehicleInspectionPage: React.FC = () => {
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto bg-gray-800/50 rounded-xl p-8 backdrop-blur-sm">
           <div className="flex items-center mb-6">
-            <FaSearch className="text-blue-400 text-2xl mr-3" />
+            <FontAwesomeIcon icon={faMagnifyingGlass} className="text-blue-400 text-2xl mr-3" />
             <h2 className="text-2xl font-bold">Check Vehicle History</h2>
           </div>
           <VehicleHistoryLookup />

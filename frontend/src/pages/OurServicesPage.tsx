@@ -1,30 +1,63 @@
 import React from 'react';
-import { FaCar, FaHome } from 'react-icons/fa';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCar, faHouse, faUserTie, faUmbrellaBeach, faPlane } from '@fortawesome/free-solid-svg-icons';
 
 const OurServicesPage: React.FC = () => {
-  const services = [
+    const services = [
     {
-      icon: <FaCar className="h-16 w-16 text-blue-600" />,
+      icon: faCar,
       title: 'Vehicle Inspections',
-      description: 'Comprehensive 200+ point inspection covering all major vehicle systems. Our certified inspectors provide detailed reports with photos and recommendations to ensure you make an informed decision.',
+      price: 'From R800',
+      description: 'Comprehensive 200+ point inspection covering all major vehicle systems. Our certified inspectors provide detailed reports with photos and recommendations.',
       features: [
-        'Pre-purchase inspections',
-        'Maintenance check-ups',
-        'Warranty verification',
-        'Service cost estimates',
-        'Vehicle history reports'
+        '200+ point inspection',
+        'Mechanical & electrical assessment',
+        'Accident & flood damage check',
+        'Service history verification',
+        'Test drive evaluation',
+        'Detailed digital report with photos'
       ]
     },
     {
-      icon: <FaHome className="h-16 w-16 text-blue-600" />,
-      title: 'Property Inspections',
-      description: 'Thorough property assessments for buyers, sellers, and renters. Our detailed reports cover all major systems and potential issues.',
+      icon: faUserTie,
+      title: 'New Car Consultation',
+      price: 'R500',
+      description: 'Expert guidance for your new vehicle purchase. Make confident decisions with our professional advice and market insights.',
       features: [
-        'Pre-purchase inspections',
-        'Rental property assessments',
-        'Structural evaluations',
+        'Market value assessment',
+        'Model comparison',
+        'Feature analysis',
+        'Negotiation tips',
+        'Dealership recommendations',
+        'Financing & warranty advice'
+      ]
+    },
+    {
+      icon: faHouse,
+      title: 'Rental Property Inspections',
+      price: 'From R600',
+      description: 'Professional property inspections to protect both tenants and landlords. Document the property condition before you move in or out.',
+      features: [
+        'Detailed condition report',
+        'High-resolution photos',
         'Plumbing & electrical checks',
-        'Comprehensive reporting'
+        'Appliance testing',
+        'Safety compliance check',
+        'Meter readings verification'
+      ]
+    },
+    {
+      icon: faUmbrellaBeach,
+      title: 'Holiday Accommodation Inspections',
+      price: 'From R700',
+      description: 'Ensure your holiday accommodation meets your expectations with our professional inspection service. We verify all aspects of your rental property before you arrive.',
+      features: [
+        'Pre-arrival accommodation verification',
+        'Facilities and amenities check',
+        'Cleanliness and safety inspection',
+        'Photo documentation of all areas',
+        'Comparison with advertised listing',
+        'Detailed inspection report'
       ]
     }
   ];
@@ -43,7 +76,7 @@ const OurServicesPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {services.map((service, index) => (
             <div 
               key={index} 
@@ -51,11 +84,18 @@ const OurServicesPage: React.FC = () => {
             >
               <div className="p-8">
                 <div className="flex items-center justify-center h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-md mx-auto mb-6 shadow-lg">
-                  {React.cloneElement(service.icon, { className: 'h-10 w-10 text-blue-700' })}
+                  <FontAwesomeIcon icon={service.icon} className="h-10 w-10 text-blue-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-white text-center mb-4">
-                  {service.title}
-                </h3>
+                <div className="text-center mb-4">
+                  <h3 className="text-2xl font-bold text-white">
+                    {service.title}
+                  </h3>
+                  {service.price && (
+                    <span className="inline-block mt-2 bg-blue-600/20 text-blue-300 text-sm font-semibold px-3 py-1 rounded-full">
+                      {service.price}
+                    </span>
+                  )}
+                </div>
                 <p className="text-gray-200 text-center mb-6">
                   {service.description}
                 </p>

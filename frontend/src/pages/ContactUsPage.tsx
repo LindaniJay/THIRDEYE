@@ -2,7 +2,7 @@ import React, { useRef, useState, ChangeEvent } from 'react';
 import axios from 'axios';
 import emailjs from '@emailjs/browser';
 
-type ServiceType = 'property' | 'vehicle' | '';
+type ServiceType = 'vehicle' | 'new-car' | 'property' | 'holiday' | '';
 
 const ContactUsPage: React.FC = () => {
   const form = useRef<HTMLFormElement>(null);
@@ -86,8 +86,10 @@ const ContactUsPage: React.FC = () => {
                 required
               >
                 <option value="">Select a service type</option>
-                <option value="property">Property Services</option>
-                <option value="vehicle">Vehicle Services</option>
+                <option value="vehicle">Vehicle Inspections</option>
+                <option value="new-car">New Car Consultation</option>
+                <option value="property">Rental Property Inspections</option>
+                <option value="holiday">Holiday Accommodation Inspections</option>
               </select>
             </div>
 
@@ -141,10 +143,108 @@ const ContactUsPage: React.FC = () => {
               </div>
             )}
 
+            {serviceType === 'holiday' && (
+              <div className="space-y-4 p-4 bg-gray-800/50 rounded-lg">
+                <h3 className="font-medium text-accent">Accommodation Details</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="accommodationName" className="block text-sm font-medium text-gray-300 mb-1">Accommodation Name *</label>
+                    <input type="text" id="accommodationName" name="accommodation_name" placeholder="e.g., Sunset Beach Resort" className="input-field w-full" required />
+                  </div>
+                  <div>
+                    <label htmlFor="accommodationType" className="block text-sm font-medium text-gray-300 mb-1">Type of Accommodation *</label>
+                    <select id="accommodationType" name="accommodation_type" className="input-field w-full" required>
+                      <option value="">Select type</option>
+                      <option value="hotel">Hotel</option>
+                      <option value="apartment">Apartment</option>
+                      <option value="villa">Villa</option>
+                      <option value="guesthouse">Guesthouse</option>
+                      <option value="resort">Resort</option>
+                      <option value="bnb">Bed & Breakfast</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="checkInDate" className="block text-sm font-medium text-gray-300 mb-1">Check-in Date *</label>
+                    <input 
+                      type="date" 
+                      id="checkInDate" 
+                      name="check_in_date" 
+                      min={new Date().toISOString().split('T')[0]} 
+                      className="input-field w-full" 
+                      required 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="checkOutDate" className="block text-sm font-medium text-gray-300 mb-1">Check-out Date *</label>
+                    <input 
+                      type="date" 
+                      id="checkOutDate" 
+                      name="check_out_date" 
+                      min={new Date().toISOString().split('T')[0]} 
+                      className="input-field w-full" 
+                      required 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="numberOfGuests" className="block text-sm font-medium text-gray-300 mb-1">Number of Guests *</label>
+                    <input type="number" id="numberOfGuests" name="number_of_guests" min="1" className="input-field w-full" required />
+                  </div>
+                  <div>
+                    <label htmlFor="bookingReference" className="block text-sm font-medium text-gray-300 mb-1">Booking Reference (if any)</label>
+                    <input type="text" id="bookingReference" name="booking_reference" className="input-field w-full" />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-300 mb-1">Special Requests or Requirements</label>
+                  <textarea 
+                    id="specialRequests" 
+                    name="special_requests" 
+                    rows={3} 
+                    className="input-field w-full" 
+                    placeholder="Any specific areas you'd like us to focus on during the inspection..."
+                  ></textarea>
+                </div>
+              </div>
+            )}
+
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="budget" className="block text-sm font-medium text-gray-300 mb-1">Your Budget (ZAR) *</label>
-                <div className="relative">
+                <label 
+                  htmlFor="budget" 
+                  className="block text-sm font-medium text-gray-300 mb-1"
+                >
+                  {serviceType === 'vehicle' 
+                    ? 'Vehicle Budget (ZAR) *' 
+                    : serviceType === 'new-car'
+                    ? 'Vehicle Budget (ZAR) *'
+                    : serviceType === 'property' 
+                    ? 'Property Budget (ZAR) *'
+                    : serviceType === 'holiday'
+                    ? 'Accommodation Budget (ZAR) *'
+                    : 'Your Budget (ZAR) *'
+                  }
+                </label>
+                
+                {serviceType !== 'new-car' && (
+                  <div className="mt-4">
+                    <div className="flex items-center">
+                      <input 
+                        id="chauffeurService" 
+                        name="chauffeur_service" 
+                        type="checkbox" 
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded"
+                      />
+                      <label htmlFor="chauffeurService" className="ml-2 block text-sm text-gray-300">
+                        Add Chauffeur Service (R500)
+                      </label>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Have one of our professional chauffeurs assist with your transportation needs during the inspection.
+                    </p>
+                  </div>
+                )}
+                
+                <div className="relative mt-4">
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">R</span>
                   <input 
                     type="number" 
