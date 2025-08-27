@@ -6,7 +6,7 @@ import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProtectedRoute from './components/ProtectedRoute';
-import Chatbot from './components/Chatbot/Chatbot';
+import NewChatbot from './components/Chatbot/NewChatbot';
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -72,7 +72,7 @@ const AppContent: React.FC = () => {
         </main>
       </Suspense>
       <Footer />
-      <Chatbot />
+      <NewChatbot />
     </div>
   );
 };

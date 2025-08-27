@@ -1,0 +1,405 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faComment, 
+  faTimes, 
+  faPaperPlane
+} from '@fortawesome/free-solid-svg-icons';
+
+interface Message {
+  id: number;
+  text: string;
+  sender: 'user' | 'bot';
+  type: 'text' | 'options';
+  options?: string[];
+}
+
+interface Service {
+  id: string;
+  name: string;
+  price: number;
+  duration: number;
+}
+
+const SERVICES: Service[] = [
+  { id: 'vehicle', name: 'Vehicle Inspection', price: 800, duration: 90 },
+  { id: 'new-car', name: 'New Car Consultation', price: 500, duration: 60 },
+  { id: 'property', name: 'Rental Property Inspection', price: 600, duration: 120 },
+  { id: 'holiday', name: 'Holiday Accommodation Inspection', price: 700, duration: 90 },
+];
+
+const Chatbot: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [messages, setMessages] = useState<Message[]>([{
+    id: 1,
+    text: "👋 Hello there! I'm your Third Eye assistant. What's your name?",
+    sender: 'bot',
+    type: 'text'
+  }]);
+  const [userName, setUserName] = useState('');
+  const [hasAskedForName, setHasAskedForName] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom of messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Handle greeting responses
+  const handleGreeting = (input: string): Message | null => {
+    const greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
+    const isGreeting = greetings.some(greeting => input.toLowerCase().includes(greeting));
+    
+    if (isGreeting) {
+      const responses = [
+        `Hi${userName ? ` ${userName}` : ''}! How can I assist you today?`,
+        `Hello${userName ? ` ${userName}` : ''}! What can I help you with?`,
+        `Hey there${userName ? ` ${userName}` : ''}! How can I be of service?`
+      ];
+      
+      return {
+        id: messages.length + 1,
+        text: responses[Math.floor(Math.random() * responses.length)],
+        sender: 'bot',
+        type: 'options',
+        options: ['Book an inspection', 'View services', 'Contact support']
+      };
+    }
+    
+    return null;
+  };
+
+  // Handle name input
+  const handleNameInput = (name: string) => {
+    const firstName = name.split(' ')[0];
+    setUserName(firstName);
+    setHasAskedForName(true);
+    
+    const welcomeMessage: Message = {
+      id: messages.length + 1,
+      text: `Nice to meet you, ${firstName}! How can I assist you today?`,
+      sender: 'bot',
+      type: 'options',
+      options: ['Book an inspection', 'View services', 'Contact support']
+    };
+    
+    setMessages(prev => [...prev, welcomeMessage]);
+  };
+
+  // Start booking flow
+  const startBooking = useCallback(() => {
+    const bookingMessage: Message = {
+      id: messages.length + 1,
+      text: 'Great! Which type of inspection would you like to book?',
+      sender: 'bot',
+      type: 'options',
+      options: SERVICES.map(service => service.name)
+    };
+    
+    setMessages(prev => [...prev, bookingMessage]);
+  }, [messages.length]);
+
+  // Process user input
+  const processUserInput = useCallback((input: string) => {
+    const normalizedInput = input.toLowerCase().trim();
+    
+    // Check for greetings
+    const greetingResponse = handleGreeting(normalizedInput);
+    if (greetingResponse) {
+      setMessages(prev => [...prev, greetingResponse]);
+      return;
+    }
+
+    // Handle name input if not set
+    if (!hasAskedForName) {
+      handleNameInput(input);
+      return;
+    }
+
+    // Handle booking flow
+    if (normalizedInput.includes('book') || normalizedInput.includes('inspection')) {
+      startBooking();
+      return;
+    }
+
+    // Handle service selection
+    const selectedService = SERVICES.find(service => 
+      service.name.toLowerCase() === normalizedInput
+    );
+
+    if (selectedService) {
+      const serviceInfo = `You've selected ${selectedService.name}. This service costs R${selectedService.price} and takes about ${selectedService.duration} minutes. Would you like to proceed with the booking?`;
+      
+      const serviceMessage: Message = {
+        id: messages.length + 1,
+        text: serviceInfo,
+        sender: 'bot',
+        type: 'options',
+        options: ['Yes, book now', 'No, show other options']
+      };
+      
+      setMessages(prev => [...prev, serviceMessage]);
+      return;
+    }
+
+    // Default response
+    const defaultResponse: Message = {
+      id: messages.length + 1,
+      text: "I'm not sure how to help with that. Would you like to book an inspection or ask about our services?",
+      sender: 'bot',
+      type: 'options',
+      options: ['Book an inspection', 'View services', 'Contact support']
+    };
+    
+    setMessages(prev => [...prev, defaultResponse]);
+  }, [hasAskedForName, messages.length, startBooking, userName]);
+
+  // Handle send message
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    const userInput = inputValue.trim();
+    if (!userInput) return;
+
+    // Add user message
+    const userMessage: Message = {
+      id: messages.length + 1,
+      text: userInput,
+      sender: 'user',
+      type: 'text'
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+
+    // Process the message
+    processUserInput(userInput);
+  };
+
+  // Toggle chat window
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
+  };
+
+  // Handle quick reply
+  const handleQuickReply = (text: string) => {
+    // Add user message
+    const userMessage: Message = {
+      id: messages.length + 1,
+      text,
+      sender: 'user',
+      type: 'text'
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Process the message
+    processUserInput(text);
+  };
+
+  return (
+    <div className={`chatbot-container ${isOpen ? 'open' : ''}`}>
+      <button className="chatbot-toggle" onClick={toggleChat}>
+        <FontAwesomeIcon icon={isOpen ? faTimes : faComment} />
+      </button>
+      
+      {isOpen && (
+        <div className="chatbot-window">
+          <div className="chatbot-header">
+            <h3>Third Eye Assistant</h3>
+            <button onClick={toggleChat} className="close-button">
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+          
+          <div className="chatbot-messages">
+            {messages.map((message) => (
+              <div key={message.id} className={`message ${message.sender}`}>
+                <div className="message-content">
+                  <p>{message.text}</p>
+                  {message.type === 'options' && message.options && (
+                    <div className="quick-replies">
+                      {message.options.map((option, index) => (
+                        <button
+                          key={index}
+                          className="quick-reply"
+                          onClick={() => handleQuickReply(option)}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+          
+          <form onSubmit={handleSendMessage} className="chatbot-input">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Type your message..."
+            />
+            <button type="submit">
+              <FontAwesomeIcon icon={faPaperPlane} />
+            </button>
+          </form>
+        </div>
+      )}
+      
+      <style jsx>{`
+        .chatbot-container {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          z-index: 1000;
+        }
+        
+        .chatbot-toggle {
+          background: #4a6baf;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          font-size: 24px;
+          cursor: pointer;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .chatbot-window {
+          position: absolute;
+          bottom: 80px;
+          right: 0;
+          width: 350px;
+          height: 500px;
+          background: white;
+          border-radius: 10px;
+          box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        
+        .chatbot-header {
+          background: #4a6baf;
+          color: white;
+          padding: 15px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .chatbot-header h3 {
+          margin: 0;
+          font-size: 16px;
+        }
+        
+        .close-button {
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          font-size: 16px;
+        }
+        
+        .chatbot-messages {
+          flex: 1;
+          padding: 15px;
+          overflow-y: auto;
+        }
+        
+        .message {
+          margin-bottom: 15px;
+          max-width: 80%;
+        }
+        
+        .message.user {
+          margin-left: auto;
+          text-align: right;
+        }
+        
+        .message.bot {
+          margin-right: auto;
+        }
+        
+        .message-content {
+          display: inline-block;
+          padding: 10px 15px;
+          border-radius: 18px;
+          background: #f0f2f5;
+          color: #050505;
+          text-align: left;
+        }
+        
+        .user .message-content {
+          background: #0084ff;
+          color: white;
+        }
+        
+        .quick-replies {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 10px;
+        }
+        
+        .quick-reply {
+          background: #e4e6eb;
+          border: none;
+          border-radius: 18px;
+          padding: 5px 12px;
+          font-size: 14px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        
+        .quick-reply:hover {
+          background: #d8dadf;
+        }
+        
+        .chatbot-input {
+          display: flex;
+          padding: 10px;
+          border-top: 1px solid #dddfe2;
+          background: #f0f2f5;
+        }
+        
+        .chatbot-input input {
+          flex: 1;
+          padding: 10px 15px;
+          border: 1px solid #dddfe2;
+          border-radius: 20px;
+          outline: none;
+          font-size: 14px;
+        }
+        
+        .chatbot-input button {
+          background: #4a6baf;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          margin-left: 10px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .chatbot-input button:hover {
+          background: #3a5a9f;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default Chatbot;

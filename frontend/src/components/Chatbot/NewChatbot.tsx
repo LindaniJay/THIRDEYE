@@ -1,11 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, FC, ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
-interface ChatbotProps {
-  onClose?: () => void;
-  initialMessages?: Message[];
-  onNewMessage?: (message: Message) => void;
-}
 import { 
   faComments, 
   faTimes, 
@@ -17,7 +11,7 @@ import {
   faEnvelope,
   faMapMarkerAlt
 } from '@fortawesome/free-solid-svg-icons';
-import { format, addDays, isBefore, isAfter, parseISO, isWeekend, parse } from 'date-fns';
+import { format, addDays, isBefore, isAfter, parseISO } from 'date-fns';
 
 interface MediaItem {
   type: 'image' | 'document' | 'video';
@@ -42,15 +36,14 @@ interface Message {
 
 interface BookingData {
   service: string;
-  date: string; // ISO date string
-  time: string; // "HH:MM" format
+  date: string;
+  time: string;
   name: string;
   email: string;
   phone: string;
   address: string;
   price?: number;
   duration?: number;
-  status?: 'pending' | 'confirmed' | 'cancelled';
 }
 
 interface Service {
@@ -59,49 +52,6 @@ interface Service {
   price: number;
   duration: number;
 }
-
-// Date and time utilities
-const formatDate = (date: Date): string => {
-  return format(date, 'EEEE, MMMM do, yyyy');
-};
-
-const formatTime = (time: string): string => {
-  return format(parseISO(`2000-01-01T${time}`), 'h:mm a');
-};
-
-const getAvailableDates = (): Date[] => {
-  const today = new Date();
-  const availableDates: Date[] = [];
-  
-  // Generate next 14 days (excluding weekends)
-  for (let i = 1; i <= 14; i++) {
-    const date = addDays(today, i);
-    if (date.getDay() !== 0 && date.getDay() !== 6) { // Skip weekends
-      availableDates.push(date);
-    }
-  }
-  
-  return availableDates;
-};
-
-const getAvailableTimeSlots = (date: Date): string[] => {
-  const slots: string[] = [];
-  const isWeekendDay = isWeekend(date);
-  
-  // Business hours: 9 AM to 5 PM on weekdays, 10 AM to 2 PM on weekends
-  const startHour = isWeekendDay ? 10 : 9;
-  const endHour = isWeekendDay ? 14 : 17;
-  
-  for (let hour = startHour; hour < endHour; hour++) {
-    // Add slots on the hour and half hour
-    slots.push(`${hour.toString().padStart(2, '0')}:00`);
-    if (hour < endHour - 1) {
-      slots.push(`${hour.toString().padStart(2, '0')}:30`);
-    }
-  }
-  
-  return slots;
-};
 
 const SERVICES: Service[] = [
   { id: 'vehicle', name: 'Vehicle Inspection', price: 800, duration: 90 },
@@ -129,19 +79,16 @@ const loadMessages = (): Message[] => {
   }];
 };
 
-const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage }) => {
+const NewChatbot: FC = (): JSX.Element => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
   const [userName, setUserName] = useState('');
   const [hasAskedForName, setHasAskedForName] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingData, setBookingData] = useState<Partial<BookingData>>({});
-  const [availableDates] = useState<Date[]>(getAvailableDates());
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Common questions and responses
@@ -303,73 +250,57 @@ const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage
 
   // Handle service selection
   const handleServiceSelection = useCallback((serviceName: string): void => {
-    if (!serviceName || typeof serviceName !== 'string') {
-      console.error('Invalid service name provided');
-      return;
-    }
-    
-    // Normalize the input and service names for better matching
-    const normalizeString = (str: string): string => str.toLowerCase().trim().replace(/\s+/g, ' ');
-    const normalizedInput = normalizeString(serviceName);
-    
-    // Try to find an exact match first
+    // Check for exact match first
     let service = SERVICES.find(s => 
-      s && s.name && normalizeString(s.name) === normalizedInput
+      s.name.toLowerCase() === serviceName.toLowerCase()
     );
 
-    // If no exact match, try partial matching
+    // If no exact match, try partial match
     if (!service) {
       service = SERVICES.find(s => 
-        s && s.name && (
-          normalizeString(s.name).includes(normalizedInput) ||
-          normalizedInput.includes(normalizeString(s.name))
-        )
+        serviceName.toLowerCase().includes(s.name.toLowerCase()) || 
+        s.name.toLowerCase().includes(serviceName.toLowerCase())
       );
     }
     
     if (!service) {
+      // If still no match, show error with service options
       const errorMessage: Message = {
         id: Date.now(),
-        text: "I'm sorry, I couldn't find that service. Here are the available services:",
+        text: "I'm sorry, I couldn't find that service. Please select from the options below:",
         sender: 'bot',
         type: 'options',
-        options: SERVICES.map(s => s.name),
+        options: [...SERVICES.map(s => s.name), 'Back to main menu'],
         context: { isServiceSelection: true }
       };
-      setMessages((prev: Message[]) => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMessage]);
       return;
     }
     
-    setBookingData((prev: Partial<BookingData>) => ({
+    // Update booking data with selected service
+    setBookingData(prev => ({
       ...prev,
       service: service.name,
       price: service.price,
       duration: service.duration
     }));
     
+    // Get service details
     const serviceDetails = getServiceDetails(service);
+    
+    // Create service message with options
     const serviceMessage: Message = {
       id: Date.now(),
       text: serviceDetails.text,
       sender: 'bot',
-      type: 'media',
+      type: serviceDetails.media?.length ? 'media' : 'text',
       media: serviceDetails.media,
-      options: ['Book this service', 'View other services', 'More details']
-    };
-    
-    setMessages((prev: Message[]) => [...prev, serviceMessage]);
-    setCurrentStep(2);
-    
-    // After service is selected, ask for date
-    const dateMessage: Message = {
-      id: Date.now(),
-      text: `Great choice! When would you like to schedule the ${service.name}?`,
-      sender: 'bot',
-      type: 'options',
-      options: availableDates.slice(0, 5).map(date => formatDate(date)),
+      options: ['Book this service', 'View other services', 'Back to main menu'],
       context: { isServiceSelection: false }
     };
-    setMessages(prev => [...prev, dateMessage]);
+    
+    // Add service message to chat
+    setMessages(prev => [...prev, serviceMessage]);
     setCurrentStep(2);
   }, [messages.length]);
 
@@ -428,91 +359,6 @@ const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage
     }
   }, [messages.length]);
 
-  // Handle date selection
-  const handleDateSelection = useCallback((dateString: string): void => {
-    if (!dateString || typeof dateString !== 'string') {
-      console.error('Invalid date string provided');
-      return;
-    }
-
-    const selectedDate = availableDates.find(d => d && formatDate(d) === dateString);
-    if (!selectedDate) {
-      console.error('Selected date not found in available dates');
-      return;
-    }
-
-    setSelectedDate(selectedDate);
-    const timeSlots = getAvailableTimeSlots(selectedDate);
-    setAvailableTimeSlots(timeSlots);
-
-    // Update booking data
-    setBookingData((prev: Partial<BookingData>) => ({
-      ...prev,
-      date: selectedDate.toISOString()
-    }));
-
-    // Ask for time slot
-    setCurrentStep(3);
-    const timeMessage: Message = {
-      id: Date.now(),
-      text: `Please select a time slot for ${formatDate(selectedDate)}:`,
-      sender: 'bot',
-      type: 'options',
-      options: timeSlots.map(slot => formatTime(slot))
-    };
-    setMessages((prev: Message[]) => [...prev, timeMessage]);
-  }, [availableDates]);
-
-  // Handle time selection
-  const handleTimeSelection = useCallback((timeString: string): void => {
-    if (!selectedDate) {
-      console.error('No date selected for time slot');
-      return;
-    }
-    
-    if (!timeString || typeof timeString !== 'string') {
-      console.error('Invalid time string provided');
-      return;
-    }
-
-    // Find the exact time slot that matches the formatted time string
-    const selectedTime = availableTimeSlots.find(slot => 
-      slot && formatTime(slot).toLowerCase() === timeString.toLowerCase()
-    );
-
-    if (!selectedTime) {
-      console.error('Selected time slot not found in available slots');
-      return;
-    }
-
-    // Update booking data
-    setBookingData((prev: Partial<BookingData>) => ({
-      ...prev,
-      time: selectedTime,
-      status: 'pending'
-    }));
-
-    // Get the current service name and price from bookingData
-    const serviceName = bookingData.service || 'the selected service';
-    const servicePrice = bookingData.price || 0;
-
-    // Confirm booking
-    setCurrentStep(4);
-    const confirmationMessage: Message = {
-      id: Date.now(),
-      text: `✅ Booking confirmed!\n\n` +
-            `🔹 Service: ${serviceName}\n` +
-            `📅 Date: ${formatDate(selectedDate)}\n` +
-            `⏰ Time: ${formatTime(selectedTime)}\n` +
-            `💰 Price: R${servicePrice}\n\n` +
-            `A confirmation has been sent to your email. Is there anything else I can help you with?`,
-      sender: 'bot',
-      type: 'options',
-      options: ['Book another inspection', 'View services', 'No, thank you']
-    };
-    setMessages((prev: Message[]) => [...prev, confirmationMessage]);
-  }, [selectedDate, availableTimeSlots, bookingData.service, bookingData.price]);
-
   // Get help message
   const getHelpMessage = (): Message => ({
     id: messages.length + 1,
@@ -535,30 +381,12 @@ const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage
     setIsTyping(false);
   };
 
-  // Process user input with context awareness
+  // Process user input
   const processUserInput = useCallback((input: string): void => {
-    // Check for empty input
-    if (!input || typeof input !== 'string' || input.trim() === '') {
-      return;
-    }
-    
-    // Convert input to lowercase and trim for consistent comparison
-    const normalizedInput = input.toLowerCase().trim();
-    
-    // Process clear command first
-    if (['clear', 'reset', 'new chat', 'start over'].includes(normalizedInput)) {
-      clearChat();
-      return;
-    }
-    if (typeof input !== 'string' || !input.trim()) {
-      console.error('Invalid input provided to processUserInput');
-      return;
-    }
-    
     const normalizedInput = input.toLowerCase().trim();
     
     // Check for context from previous message
-    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    const lastMessage = messages[messages.length - 1];
     
     // Handle booking confirmation context
     if (lastMessage?.context?.isBookingConfirmation) {
@@ -570,33 +398,36 @@ const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage
       return handleServiceSelection(input);
     }
     
-    // Handle date selection (step 2)
-    if (currentStep === 2) {
-      try {
-        const selectedDate = availableDates.find(date => 
-          date && formatDate(date).toLowerCase() === normalizedInput
-        );
-        if (selectedDate) {
-          return handleDateSelection(formatDate(selectedDate));
-        }
-      } catch (error) {
-        console.error('Error processing date selection:', error);
+    // Process user input with context awareness
+    const processUserInputBase = (): void => {
+      // Check for goodbye
+      if (['bye', 'goodbye', 'see you', 'goodbye!', 'bye!', 'see you later'].includes(normalizedInput)) {
+        const goodbyeMessages = [
+          `Goodbye${userName ? ' ' + userName : ''}! Have a great day! 👋`,
+          `See you later${userName ? ' ' + userName : ''}! Take care! 👋`,
+          `Goodbye${userName ? ' ' + userName : ''}! Thanks for chatting with us! 👋`
+        ];
+        
+        const randomGoodbye = goodbyeMessages[Math.floor(Math.random() * goodbyeMessages.length)];
+        
+        setMessages(prev => [...prev, {
+          id: prev.length + 1,
+          text: randomGoodbye,
+          sender: 'bot',
+          type: 'text'
+        }]);
+        
+        // Close the chat after a short delay
+        setTimeout(() => {
+          setIsOpen(false);
+        }, 1500);
+        return;
       }
-    }
-    
-    // Handle time selection (step 3)
-    if (currentStep === 3 && selectedDate) {
-      try {
-        const selectedTime = availableTimeSlots.find(slot => 
-          slot && formatTime(slot).toLowerCase() === normalizedInput
-        );
-        if (selectedTime) {
-          return handleTimeSelection(formatTime(selectedTime));
-        }
-      } catch (error) {
-        console.error('Error processing time selection:', error);
-      }
-    }
+      
+      // Check for greetings
+      const greetingResponse = handleGreeting(normalizedInput);
+      if (greetingResponse) {
+        setMessages(prev => [...prev, {
           id: prev.length + 1,
           text: greetingResponse.text,
           sender: 'bot',
@@ -706,114 +537,30 @@ const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage
     isBooking, 
     currentStep, 
     bookingData.service, 
-    bookingData.price,
     handleServiceSelection, 
-    handleBookingConfirmation,
-    handleDateSelection,
-    handleTimeSelection,
-    availableDates,
-    availableTimeSlots,
-    selectedDate
+    handleBookingConfirmation
   ]);
 
-  // Reset chat to initial state
-  const resetChat = useCallback((): void => {
-    setMessages([{
-      id: 1,
-      text: "👋 Hello there! I'm your Third Eye assistant. What's your name?",
-      sender: 'bot',
-      type: 'text' as const
-    }]);
-    setCurrentStep(1);
-    setBookingData({});
-    setSelectedDate(null);
-    setAvailableTimeSlots([]);
-  }, []);
-
-  // Clear chat and start fresh
-  const clearChat = useCallback((): void => {
-    const freshMessage: Message = {
-      id: Date.now(),
-      text: "🔄 Chat cleared! How can I help you today?",
-      sender: 'bot',
-      type: 'options',
-      options: ['Book an inspection', 'View services', 'Contact support']
-    };
-    
-    setMessages([freshMessage]);
-    setCurrentStep(1);
-    setBookingData({});
-    setSelectedDate(null);
-    setAvailableTimeSlots([]);
-  }, [setMessages, setCurrentStep, setBookingData, setSelectedDate, setAvailableTimeSlots]);
-
-  // Clear all messages and start fresh
-  const clearAndStart = useCallback((): void => {
-    resetChat();
-    // Add a small delay to ensure state is reset before showing welcome message
-    setTimeout(() => {
-      const freshWelcome: Message = {
-        id: Date.now(),
-        text: "Hi there! I'm your booking assistant. How can I help you today?",
-        sender: 'bot',
-        type: 'options',
-        options: ['Book an inspection', 'View services', 'Get help']
-      };
-      setMessages([freshWelcome]);
-    }, 100);
-  }, [resetChat]);
-
   // Handle send message
-  const handleSendMessage = useCallback((e: React.FormEvent<HTMLFormElement>): void => {
+  const handleSendMessage = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     const userInput = inputValue.trim();
     if (!userInput || isTyping) return;
 
-    // Handle clear/exit commands immediately
-    const normalizedInput = userInput.toLowerCase().trim();
-    if (['clear', 'reset', 'new chat', 'start over'].includes(normalizedInput)) {
-      clearChat();
-      setInputValue('');
-      return;
-    }
-    
-    if (['exit', 'quit', 'bye', 'goodbye', 'see you'].includes(normalizedInput)) {
-      const goodbyeMessage = `Goodbye! Have a great day! 👋`;
-      setMessages((prev: Message[]) => [...prev, {
-        id: Date.now(),
-        text: userInput,
-        sender: 'user',
-        type: 'text'
-      }, {
-        id: Date.now() + 1,
-        text: goodbyeMessage,
-        sender: 'bot',
-        type: 'text'
-      }]);
-      setInputValue('');
-      
-      // Close chat after a short delay
-      setTimeout(() => {
-        if (onClose) onClose();
-      }, 1500);
-      return;
-    }
-
     // Add user message
     const userMessage: Message = {
-      id: Date.now(),
+      id: messages.length + 1,
       text: userInput,
       sender: 'user',
       type: 'text'
     };
 
-    // Update messages with user input
-    setMessages((prev: Message[]) => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
 
     // Process the message with typing indicator
     simulateTyping(() => processUserInput(userInput));
-  }, [inputValue, isTyping, clearChat, setInputValue, setMessages, onClose, processUserInput, simulateTyping]);
+  };
 
   // Toggle chat window
   const toggleChat = (): void => {
@@ -826,7 +573,7 @@ const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage
     
     // Add user message
     const userMessage: Message = {
-      id: messages.length + 1,
+      id: Date.now(),
       text,
       sender: 'user',
       type: 'text'
@@ -836,16 +583,60 @@ const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage
     
     // Process with typing indicator
     simulateTyping(() => {
+      const lowerText = text.toLowerCase();
+      
+      // Check for navigation options first
+      if (lowerText === 'back to main menu') {
+        const welcomeMessage: Message = {
+          id: Date.now() + 1,
+          text: `Welcome back! How can I help you today?`,
+          sender: 'bot',
+          type: 'options',
+          options: ['Book an inspection', 'View services', 'Contact support']
+        };
+        setMessages(prev => [...prev, welcomeMessage]);
+        setCurrentStep(0);
+        setIsBooking(false);
+        return;
+      }
+      
+      if (lowerText === 'view other services' || lowerText === 'view services') {
+        const servicesMessage: Message = {
+          id: Date.now() + 1,
+          text: 'Here are our available services. Please select one:',
+          sender: 'bot',
+          type: 'options',
+          options: [...SERVICES.map(s => s.name), 'Back to main menu'],
+          context: { isServiceSelection: true }
+        };
+        setMessages(prev => [...prev, servicesMessage]);
+        return;
+      }
+      
       // Check if the text matches any service name
       const selectedService = SERVICES.find(service => 
-        text.toLowerCase() === service.name.toLowerCase()
+        service.name.toLowerCase() === lowerText
       );
       
       if (selectedService) {
         handleServiceSelection(selectedService.name);
-      } else if (text.toLowerCase() === 'book an inspection') {
-        startBooking();
-      } else if (text.toLowerCase() === 'help') {
+      } else if (lowerText === 'book an inspection' || lowerText === 'book this service') {
+        if (bookingData.service) {
+          // If we already have a service selected, proceed to booking
+          startBooking();
+        } else {
+          // Otherwise show services to select from
+          const servicesMessage: Message = {
+            id: Date.now() + 1,
+            text: 'Please select a service to book:',
+            sender: 'bot',
+            type: 'options',
+            options: [...SERVICES.map(s => s.name), 'Back to main menu'],
+            context: { isServiceSelection: true }
+          };
+          setMessages(prev => [...prev, servicesMessage]);
+        }
+      } else if (lowerText === 'help') {
         setMessages(prev => [...prev, getHelpMessage()]);
       } else {
         processUserInput(text);
@@ -905,184 +696,187 @@ const Chatbot: FC<ChatbotProps> = ({ onClose, initialMessages = [], onNewMessage
   };
 
   // Get contextual quick replies based on conversation state
-  const getQuickReplies = useCallback((): string[] => {
+  const getContextualReplies = (): string[] => {
     const lastMessage = messages[messages.length - 1];
     
     if (!lastMessage || lastMessage.sender === 'user') {
       return [];
     }
-  });
-  
-  // Render message content helper
-  const renderMessageContent = (message: Message): ReactNode => {
-    if (message.type === 'options' && message.options) {
-      return (
-        <div className="flex flex-wrap gap-2">
-          {message.options.map((option, i) => (
-            <button
-              key={i}
-              onClick={() => handleQuickReply(option)}
-              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-colors"
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      );
+
+    // Check for specific contexts in the last bot message
+    if (lastMessage.context?.isServiceSelection) {
+      return [
+        'Vehicle Inspection', 
+        'New Car Consultation',
+        'Rental Property Inspection',
+        'Holiday Accommodation Inspection'
+      ];
     }
 
-    if (message.media) {
-      return (
-        <div className="space-y-2">
-          <div className="whitespace-pre-wrap">
-            {typeof message.text === 'string' 
-              ? message.text.split('\n').map((line, i) => (
-                  <p key={i} className="mb-1">{line}</p>
-                ))
-              : message.text}
-          </div>
-          <div className="grid gap-2 grid-cols-2">
-            {message.media.map((item, i) => (
-              <div key={i} className="rounded-lg overflow-hidden">
-                <img 
-                  src={item.url} 
-                  alt={item.alt || ''} 
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      );
+    if (lastMessage.context?.isBookingConfirmation) {
+      return ['Yes, book it', 'No, change details', 'Cancel booking'];
     }
 
-    return typeof message.text === 'string' 
-      ? message.text.split('\n').map((line, i) => (
-          <p key={i} className="mb-1">{line}</p>
-        ))
-      : message.text;
+    if (lastMessage.context?.isHelpRequest) {
+      return ['Booking help', 'Service details', 'Contact support'];
+    }
+
+    // Default quick replies
+    return [
+      'Book an inspection', 
+      'View services', 
+      'Contact support'
+    ];
   };
 
-  // Responsive styles
   const chatContainerStyle = {
     height: '85vh',
     maxHeight: '600px',
     width: '95vw',
     maxWidth: '24rem',
     minWidth: '280px',
-    position: 'fixed',
+    position: 'fixed' as const,
     bottom: '1rem',
     right: '1rem',
     zIndex: 50,
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     overflow: 'hidden',
-    borderRadius: '0.5rem'
+    borderRadius: '0.5rem',
+    backgroundColor: 'white'
   };
 
   const toggleButtonStyle = {
-    position: 'fixed',
+    position: 'fixed' as const,
     bottom: '1rem',
     right: '1rem',
     zIndex: 40
   };
 
-return (
-  <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50 w-auto">
-    {!isOpen && (
-      <button
-        onClick={toggleChat}
-        style={toggleButtonStyle}
-        className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
-        aria-label="Open chat"
-      >
-        <FontAwesomeIcon icon={faComments} size="lg" />
-      </button>
-    )}
-    <div style={{ display: isOpen ? 'block' : 'none' }}>
-      <div style={chatContainerStyle}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 bg-blue-500 text-white">
-          <h3 className="text-lg font-medium">Chat with us</h3>
-          <div className="flex space-x-2">
-            <button
-              onClick={clearChat}
-              className="text-white hover:bg-blue-600 focus:outline-none px-2 py-1 text-sm rounded"
-              aria-label="New chat"
-            >
-              New Chat
-            </button>
-            <button
-              onClick={toggleChat}
-              className="text-white hover:bg-blue-600 focus:outline-none w-8 h-8 flex items-center justify-center rounded-full"
-              aria-label="Close chat"
-            >
-              <FontAwesomeIcon icon={faTimes} />
-            </button>
+  return (
+    <>
+      {!isOpen ? (
+        <button
+          onClick={toggleChat}
+          style={toggleButtonStyle}
+          className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+          aria-label="Open chat"
+        >
+          <FontAwesomeIcon icon={faComments} size="lg" />
+        </button>
+      ) : (
+        <div style={chatContainerStyle}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-3 bg-blue-500 text-white">
+            <h3 className="text-lg font-medium">Chat with us</h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  setMessages([{
+                    id: Date.now(),
+                    text: " Chat cleared! How can I help you today?",
+                    sender: 'bot',
+                    type: 'text'
+                  }]);
+                  setCurrentStep(0);
+                  setBookingData({});
+                  setHasAskedForName(false);
+                }}
+                className="text-white hover:bg-blue-600 focus:outline-none px-2 py-1 text-sm rounded"
+                aria-label="New chat"
+              >
+                New Chat
+              </button>
+              <button
+                onClick={toggleChat}
+                className="text-white hover:bg-blue-600 focus:outline-none w-8 h-8 flex items-center justify-center rounded-full"
+                aria-label="Close chat"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+          </div>
+          
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+            {messages.map((message) => (
+              <div 
+                key={message.id} 
+                className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div 
+                  className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
+                    message.sender === 'user' 
+                      ? 'bg-blue-500 text-white rounded-br-none' 
+                      : 'bg-white text-gray-800 rounded-bl-none shadow'
+                  }`}
+                >
+                  <div className="text-sm whitespace-pre-wrap">
+                    {renderMessageContent(message)}
+                  </div>
+                  
+                  {/* Quick reply options */}
+                  {message.sender === 'bot' && message.type === 'options' && message.options && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {message.options.map((option, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleQuickReply(option)}
+                          className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded-full whitespace-nowrap"
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+          
+          {/* Input area */}
+          <div className="p-3 bg-white border-t border-gray-200">
+            <form onSubmit={handleSendMessage} className="flex space-x-2">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                disabled={isTyping}
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                disabled={!inputValue.trim() || isTyping}
+              >
+                <FontAwesomeIcon icon={faPaperPlane} />
+              </button>
+            </form>
+            
+            {/* Quick reply suggestions */}
+            {getContextualReplies().length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {getContextualReplies().map((reply, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleQuickReply(reply)}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded-full whitespace-nowrap"
+                    disabled={isTyping}
+                  >
+                    {reply}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-        
-        {/* Messages container */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-2 sm:p-4">
-          {messages.map((message) => (
-            <div 
-              key={message.id} 
-              className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div 
-                className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
-                  message.sender === 'user' 
-                    ? 'bg-blue-500 text-white rounded-br-none' 
-                    : 'bg-white text-gray-800 rounded-bl-none shadow'
-                }`}
-              >
-                <div className="text-sm sm:text-base whitespace-pre-wrap break-words">
-                  {renderMessageContent(message)}
-                </div>
-                
-                {/* Quick reply options */}
-                {message.sender === 'bot' && message.type === 'options' && message.options && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {message.options.map((option, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleQuickReply(option)}
-                        className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded-full whitespace-nowrap"
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        {/* Input area */}
-        <div className="p-2 sm:p-3 bg-white border-t border-gray-200">
-          <form onSubmit={handleSendMessage} className="flex space-x-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-              disabled={isTyping}
-            />
-            <button
-              type="submit"
-              disabled={!inputValue.trim() || isTyping}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 text-sm sm:text-base"
-            >
-              Send
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-export default Chatbot;
+      )}
+    </>
+  );
+};
+
+export default NewChatbot;
