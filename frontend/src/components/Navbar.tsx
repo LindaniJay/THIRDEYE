@@ -107,15 +107,6 @@ const Navbar: React.FC = () => {
       {isOpen && (
         <div className="md:hidden mobile-menu bg-gray-900">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <div className="flex justify-center py-4">
-              <div className="bg-white p-2 rounded">
-                <img 
-                  src="/Thirdeye Logo Design.png" 
-                  alt="THIRDEYE Logo" 
-                  className="h-10 w-auto"
-                />
-              </div>
-            </div>
             {navLinks.map((link) => (
               <NavLink
                 key={link.to}
@@ -131,12 +122,6 @@ const Navbar: React.FC = () => {
                 {link.text}
               </NavLink>
             ))}
-            <NavLink
-              to="/contact"
-              className="block w-full text-center px-4 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 mt-2"
-            >
-              Contact Us
-            </NavLink>
           </div>
         </div>
       )}
