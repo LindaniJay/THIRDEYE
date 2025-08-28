@@ -1,0 +1,93 @@
+doctype html
+html
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title Booking Confirmation - ThirdEye
+    style.
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        text-align: center;
+        padding: 20px 0;
+        background-color: #27ae60;
+        color: white;
+        border-radius: 5px 5px 0 0;
+      }
+      .content {
+        padding: 20px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+      }
+      .button {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #27ae60;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .footer {
+        margin-top: 20px;
+        font-size: 12px;
+        text-align: center;
+        color: #777;
+      }
+      .booking-details {
+        background-color: #f0f0f0;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+      }
+      .detail-row {
+        display: flex;
+        margin: 10px 0;
+      }
+      .detail-label {
+        font-weight: bold;
+        width: 150px;
+      }
+  body
+    .header
+      h1 Booking Confirmed!
+    .content
+      p Hello #{firstName},
+      p Your booking has been confirmed. Here are the details:
+      
+      .booking-details
+        .detail-row
+          .detail-label Service:
+          .detail-value #{booking.service}
+        .detail-row
+          .detail-label Date:
+          .detail-value #{new Date(booking.date).toLocaleDateString()}
+        .detail-row
+          .detail-label Time:
+          .detail-value #{booking.time}
+        .detail-row
+          .detail-label Location:
+          .detail-value #{booking.location || 'To be confirmed'}
+        .detail-row
+          .detail-label Booking ID:
+          .detail-value #{booking._id}
+      
+      p You can view or manage your booking by clicking the button below:
+      div(style='text-align: center;')
+        a.button(href=url) View Booking
+      
+      p If you need to reschedule or cancel your booking, please do so at least 24 hours in advance.
+      p If you have any questions, please contact our support team.
+      p Best regards,
+      p The ThirdEye Team
+    .footer
+      p © #{new Date().getFullYear()} ThirdEye. All rights reserved.
+      p This is an automated message, please do not reply to this email.

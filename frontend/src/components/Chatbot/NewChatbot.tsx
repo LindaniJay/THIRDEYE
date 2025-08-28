@@ -1,881 +1,1244 @@
-import React, { useState, useRef, useEffect, useCallback, FC, ReactNode } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faComments, 
-  faTimes, 
-  faPaperPlane, 
-  faCalendarAlt,
-  faClock,
-  faUser,
-  faPhone,
-  faEnvelope,
-  faMapMarkerAlt
-} from '@fortawesome/free-solid-svg-icons';
-import { format, addDays, isBefore, isAfter, parseISO } from 'date-fns';
+import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Send, MessageCircle, X, HelpCircle } from "lucide-react";
 
-interface MediaItem {
-  type: 'image' | 'document' | 'video';
-  url: string;
-  alt?: string;
-  title?: string;
-}
-
-interface Message {
-  id: number;
-  text: string | ReactNode;
-  sender: 'user' | 'bot';
-  type: 'text' | 'options' | 'media';
-  options?: string[];
-  media?: MediaItem[];
-  context?: {
-    isServiceSelection?: boolean;
-    isBookingConfirmation?: boolean;
-    isHelpRequest?: boolean;
-  };
-}
-
-interface BookingData {
-  service: string;
-  date: string;
-  time: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  price?: number;
-  duration?: number;
-}
-
-interface Service {
-  id: string;
-  name: string;
-  price: number;
-  duration: number;
-}
-
-const SERVICES: Service[] = [
-  { id: 'vehicle', name: 'Vehicle Inspection', price: 800, duration: 90 },
-  { id: 'new-car', name: 'New Car Consultation', price: 500, duration: 60 },
-  { id: 'property', name: 'Rental Property Inspection', price: 600, duration: 120 },
-  { id: 'holiday', name: 'Holiday Accommodation Inspection', price: 700, duration: 90 },
-];
-
-// Load messages from localStorage if available
-const loadMessages = (): Message[] => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('chatMessages');
-    return saved ? JSON.parse(saved) : [{
-      id: 1,
-      text: "👋 Hello there! I'm your Third Eye assistant. What's your name?",
-      sender: 'bot',
-      type: 'text' as const
-    }];
-  }
-  return [{
-    id: 1,
-    text: "👋 Hello there! I'm your Third Eye assistant. What's your name?",
-    sender: 'bot',
-    type: 'text' as const
-  }];
+// Define message type
+type Message = {
+  sender: "bot" | "user";
+  text: string;
+  type?: string;
+  options?: { text: string; action: () => void }[];
+  snip_old_id?: number;
 };
 
-const NewChatbot: FC = (): JSX.Element => {
+interface Service {
+  name: string;
+  emoji: string;
+  duration: string;
+  price: number;
+  description: string;
+}
+
+interface Context {
+  step:
+    | "greeting"
+    | "chooseOption"
+    | "confirmServiceAfterInfo"
+    | "selectService"
+    | "schedule"
+    | "getName"
+    | "getPhone"
+    | "getEmail"
+    | "reminderConfirmation"
+    | "finalConfirmation"
+    | "humanHandoff"
+    | "help";
+  service?: string;
+}
+
+interface UserData {
+  service?: string;
+  schedule?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
+const services: Service[] = [
+  {
+    name: "Used Car Inspection",
+    emoji: "🚗",
+    duration: "1h",
+    price: 899,
+    description:
+      "Comprehensive 120-point inspection covering all major vehicle systems, including roadworthy checks and service history verification",
+  },
+  {
+    name: "Property Inspection",
+    emoji: "🏡",
+    duration: "1h 30m",
+    snip_old_id: 2,
+    price: 1499,
+    description:
+      "Detailed inspection of residential properties, including structural integrity, electrical, and plumbing checks",
+  },
+  {
+    name: "Vehicle Roadworthy Check",
+    emoji: "🔧",
+    duration: "45m",
+    price: 599,
+    description:
+      "Official roadworthy inspection to ensure your vehicle meets South African road safety standards",
+  },
+  {
+    name: "Rental Property Snag List",
+    emoji: "📝",
+    duration: "1h",
+    price: 1299,
+    description:
+      "Comprehensive snag list for rental properties, including high-resolution photos and detailed report",
+  },
+  {
+    name: "Pre-Purchase Vehicle Inspection",
+    emoji: "🔍",
+    duration: "1h 15m",
+    price: 999,
+    description:
+      "Thorough inspection of used vehicles before purchase, including test drive and VIN verification",
+  },
+];
+
+// Centralized service options
+const getServiceOptions = (
+  setContext: React.Dispatch<React.SetStateAction<Context>>,
+  addBotMessage: (text: string, type?: string, options?: { text: string; action: () => void }[]) => void
+) => ({
+  type: "service-selection",
+  options: services.map((service) => ({
+    text: `${service.emoji} ${service.name}\n⏱ ${service.duration} • ${formatPrice(service.price)}\n${service.description}`,
+    action: () => {
+      setContext({ step: "schedule", service: service.name });
+      addBotMessage(
+        `You've selected: ${service.emoji} *${service.name}*\n` +
+          `⏱ Duration: ${service.duration}\n` +
+          `💰 Price: ${formatPrice(service.price)} (VAT incl.)\n\n` +
+          `${service.description}\n\n` +
+          `Would you like to book this service?`,
+        "service-confirmation",
+        [
+          {
+            text: "✅ Yes, book now",
+            action: () => {
+              const availableDates = getAvailableDates();
+              addBotMessage(
+                "When would you like to schedule your service? Here are some available time slots:\n" +
+                  availableDates.join("\n"),
+                "schedule-options",
+                availableDates.map((date) => ({
+                  text: date,
+                  action: () => {
+                    setUserData((prev) => ({ ...prev, schedule: date }));
+                    addBotMessage(`Got it! For ${service.name}, we've noted "${date}" as your preferred time.`);
+                    addBotMessage("What's your full name?");
+                    setContext({ step: "getName" });
+                  },
+                }))
+              );
+            },
+          },
+          {
+            text: "🔄 View other services",
+            action: () => {
+              addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+              setContext({ step: "selectService" });
+            },
+          },
+          {
+            text: "❓ Help",
+            action: () => {
+              addBotMessage(getHelpMessage("selectService"), "help");
+              setContext({ step: "help" });
+            },
+          },
+          {
+            text: "❌ Cancel",
+            action: () => resetChat(setContext, setMessages, setUserData),
+          },
+        ]
+      );
+    },
+  })),
+});
+
+// Centralized available dates
+const getAvailableDates = () => [
+  `Today (${new Date().toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })})`,
+  `Tomorrow (${new Date(Date.now() + 86400000).toLocaleDateString("en-ZA", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })})`,
+  `${new Date(Date.now() + 172800000).toLocaleDateString("en-ZA", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })}`,
+  `${new Date(Date.now() + 259200000).toLocaleDateString("en-ZA", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })}`,
+];
+
+// Help message generator
+const getHelpMessage = (step: Context["step"]) => {
+  const generalHelp =
+    "I'm here to assist you with booking services or answering questions! 😊\n\n" +
+    "• You can *type* your responses or *click* the option buttons.\n" +
+    "• To book a service, select 'Book a Service' and follow the steps.\n" +
+    "• To learn more, choose 'Learn about Services' for details.\n" +
+    "• Need human support? Select 'Talk to a Human' or contact us at info@thirdeye.co.za or 0861 123 456.\n" +
+    "• Type 'help' anytime or select the ❓ Help option for assistance.\n" +
+    "• To start over, select 'Cancel' or 'Back to main menu'.\n\n";
+
+  switch (step) {
+    case "greeting":
+    case "chooseOption":
+      return (
+        generalHelp +
+        "What can I do for you now? Try selecting an option like 'Book a Service' or type 'help' for more guidance."
+      );
+    case "confirmServiceAfterInfo":
+      return (
+        generalHelp +
+        "You're deciding whether to book a service. Select 'Yes' to choose a service or 'No' to explore other options."
+      );
+    case "selectService":
+      return (
+        generalHelp +
+        "Please select a service from the list by clicking an option or typing the exact service name (e.g., 'Used Car Inspection')."
+      );
+    case "schedule":
+      return (
+        generalHelp +
+        "Choose a date for your service by clicking an option or typing a date like 'Today' or 'Tomorrow'. Check the available dates listed."
+      );
+    case "getName":
+      return generalHelp + "Please provide your full name to continue with the booking.";
+    case "getPhone":
+      return (
+        generalHelp +
+        "Enter a valid South African phone number (e.g., 071 234 5678 or +27712345678) to proceed."
+      );
+    case "getEmail":
+      return generalHelp + "Provide a valid email address (e.g., yourname@example.com) to finalize your booking.";
+    case "reminderConfirmation":
+      return (
+        generalHelp +
+        "You're confirming if you want a reminder for your appointment. Select 'Yes' or 'No', or let me know what else you need."
+      );
+    case "finalConfirmation":
+      return (
+        generalHelp +
+        "Your booking is complete! You can book another service, return to the main menu, or end the chat."
+      );
+    case "humanHandoff":
+      return (
+        generalHelp +
+        "You're being connected to a human agent. In the meantime, I can assist with other questions or bookings."
+      );
+    case "help":
+      return generalHelp + "What can I help you with now? Select an option or type your request.";
+    default:
+      return generalHelp + "How can I assist you today?";
+  }
+};
+
+const NewChatbot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(loadMessages);
-  const [userName, setUserName] = useState('');
-  const [hasAskedForName, setHasAskedForName] = useState(false);
-  const [isBooking, setIsBooking] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [bookingData, setBookingData] = useState<Partial<BookingData>>({});
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Common questions and responses
-  const commonQuestions: Record<string, string> = {
-    'services': 'We offer vehicle inspections, new car consultations, rental property inspections, and holiday accommodation inspections.',
-    'working hours': 'We are open Monday to Friday from 8 AM to 5 PM.',
-    'contact': 'You can contact us at info@thirdeye.com or call us at (123) 456-7890.'
-  };
-
-  // Auto-scroll to bottom of messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Save messages to localStorage when they change
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('chatMessages', JSON.stringify(messages));
-    }
-  }, [messages]);
-
-  // Handle name input
-  const handleNameInput = (name: string): boolean => {
-    const trimmedName = name.trim();
-    if (trimmedName.length === 0) {
-      const errorMessage: Message = {
-        id: messages.length + 1,
-        text: "I didn't catch your name. Could you please tell me your name?",
-        sender: 'bot',
-        type: 'text'
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      return false;
-    }
-
-    const firstName = trimmedName.split(' ')[0];
-    setUserName(firstName);
-    setHasAskedForName(true);
-    
-    const welcomeMessages = [
-      `Hi ${firstName}! How can I help you today?`,
-      `Hello ${firstName}! What can I assist you with?`,
-      `Welcome ${firstName}! How can I be of service?`
-    ];
-    
-    const welcomeMessage: Message = {
-      id: messages.length + 1,
-      text: welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)],
-      sender: 'bot',
-      type: 'options',
-      options: ['Book an inspection', 'View services', 'Contact support']
-    };
-    
-    setMessages(prev => [...prev, welcomeMessage]);
-    return true;
-  };
-
-  // Handle greetings
-  const handleGreeting = (input: string): { text: string; options: string[] } | null => {
-    const greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
-    
-    if (greetings.some(greeting => input.toLowerCase().includes(greeting))) {
-      const responses = [
-        "Hello! How can I help you today?",
-        "Hi there! What can I do for you?",
-        "Greetings! How may I assist you?"
-      ];
-      
-      return {
-        text: responses[Math.floor(Math.random() * responses.length)],
-        options: ['Book an inspection', 'View services', 'Contact support']
-      };
-    }
-    
-    return null;
-  };
-
-  // Start booking process
-  const startBooking = useCallback((): void => {
-    setIsBooking(true);
-    setCurrentStep(1);
-    
-    const greeting = userName ? `${userName}, ` : '';
-    const bookingStartMessage: Message = {
-      id: messages.length + 1,
-      text: `${greeting}I'd be happy to help you book an inspection. Which service are you interested in?`,
-      sender: 'bot',
-      type: 'options',
-      options: SERVICES.map(service => service.name),
-      context: { isServiceSelection: true }
-    };
-    
-    setMessages(prev => [...prev, bookingStartMessage]);
-  }, [messages.length, userName]);
-
-  // Service-specific instructions
-  const getServiceInstructions = (service: Service): string => {
-    const instructions: Record<string, string> = {
-      'Vehicle Inspection': 'Please have your vehicle registration and service history ready.',
-      'New Car Consultation': 'Please have the vehicle details and your questions ready.',
-      'Rental Property Inspection': 'Please ensure the property is accessible and have the address ready.',
-      'Holiday Accommodation Inspection': 'Please have the accommodation details and check-in time ready.'
-    };
-    return instructions[service.name] || 'Please be ready with any relevant documents or information.';
-  };
-
-  // Get service details with rich content
-  const getServiceDetails = (service: Service): { text: string; media?: MediaItem[] } => {
-    if (!service) {
-      return { text: 'Service details not available.', media: [] };
-    }
-    
-    const details: { text: string; media?: MediaItem[] } = {
-      text: `🔍 **${service.name}**\n\n` +
-        `• Price: R${service.price}\n` +
-        `• Duration: ${service.duration} minutes\n\n` +
-        getServiceInstructions(service),
-      media: []
-    };
-
-    // Add service-specific media
-    switch(service.id) {
-      case 'vehicle':
-        details.media = [{
-          type: 'image',
-          url: '/images/vehicle-inspection.jpg',
-          alt: 'Vehicle Inspection',
-          title: 'Comprehensive Vehicle Inspection'
-        }];
-        break;
-      case 'new-car':
-        details.media = [{
-          type: 'image',
-          url: '/images/new-car-consultation.jpg',
-          alt: 'New Car Consultation',
-          title: 'Expert Car Buying Advice'
-        }];
-        break;
-      case 'property':
-        details.media = [{
-          type: 'image',
-          url: '/images/property-inspection.jpg',
-          alt: 'Property Inspection',
-          title: 'Thorough Property Assessment'
-        }];
-        break;
-      case 'holiday':
-        details.media = [{
-          type: 'image',
-          url: '/images/holiday-inspection.jpg',
-          alt: 'Holiday Accommodation Inspection',
-          title: 'Vacation Rental Verification'
-        }];
-        break;
-    }
-
-    return details;
-  };
-
-  // Handle service selection
-  const handleServiceSelection = useCallback((serviceName: string): void => {
-    // Check for exact match first
-    let service = SERVICES.find(s => 
-      s.name.toLowerCase() === serviceName.toLowerCase()
-    );
-
-    // If no exact match, try partial match
-    if (!service) {
-      service = SERVICES.find(s => 
-        serviceName.toLowerCase().includes(s.name.toLowerCase()) || 
-        s.name.toLowerCase().includes(serviceName.toLowerCase())
-      );
-    }
-    
-    if (!service) {
-      // If still no match, show error with service options
-      const errorMessage: Message = {
-        id: Date.now(),
-        text: "I'm sorry, I couldn't find that service. Please select from the options below:",
-        sender: 'bot',
-        type: 'options',
-        options: [...SERVICES.map(s => s.name), 'Back to main menu'],
-        context: { isServiceSelection: true }
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      return;
-    }
-    
-    // Update booking data with selected service
-    setBookingData(prev => ({
-      ...prev,
-      service: service.name,
-      price: service.price,
-      duration: service.duration
-    }));
-    
-    // Get service details
-    const serviceDetails = getServiceDetails(service);
-    
-    // Create service message with options
-    const serviceMessage: Message = {
-      id: Date.now(),
-      text: serviceDetails.text,
-      sender: 'bot',
-      type: serviceDetails.media?.length ? 'media' : 'text',
-      media: serviceDetails.media,
-      options: ['Book this service', 'View other services', 'Back to main menu'],
-      context: { isServiceSelection: false }
-    };
-    
-    // Add service message to chat
-    setMessages(prev => [...prev, serviceMessage]);
-    setCurrentStep(2);
-  }, [messages.length]);
-
-  // Handle booking confirmation
-  const handleBookingConfirmation = useCallback((input: string): void => {
-    const normalizedInput = input.toLowerCase();
-    
-    if (normalizedInput.includes('yes') || normalizedInput.includes('confirm') || normalizedInput.includes('book it')) {
-      // Process booking confirmation
-      const confirmationMessage: Message = {
-        id: messages.length + 1,
-        text: `✅ Booking confirmed! We've sent the details to your email. Is there anything else I can help you with?`,
-        sender: 'bot',
-        type: 'options',
-        options: ['Book another inspection', 'View services', 'Contact support']
-      };
-      setMessages(prev => [...prev, confirmationMessage]);
-      setIsBooking(false);
-      setCurrentStep(0);
-    } else if (normalizedInput.includes('change service') || normalizedInput.includes('different service')) {
-      // Handle service change
-      const serviceMessage: Message = {
-        id: messages.length + 1,
-        text: 'Which service would you like to book instead?',
-        sender: 'bot',
-        type: 'options',
-        options: SERVICES.map(s => s.name),
-        context: { isServiceSelection: true }
-      };
-      setMessages(prev => [...prev, serviceMessage]);
-      setCurrentStep(1);
-    } else if (normalizedInput.includes('cancel') || normalizedInput.includes('no')) {
-      // Handle cancellation
-      const cancelMessage: Message = {
-        id: messages.length + 1,
-        text: 'No problem! The booking has been cancelled. Is there anything else I can help you with?',
-        sender: 'bot',
-        type: 'options',
-        options: ['Book an inspection', 'View services', 'Contact support']
-      };
-      setMessages(prev => [...prev, cancelMessage]);
-      setIsBooking(false);
-      setCurrentStep(0);
-      setBookingData({});
-    } else {
-      // Handle other responses
-      const clarificationMessage: Message = {
-        id: messages.length + 1,
-        text: 'I\'m not sure what you\'d like to do. Please choose an option below:',
-        sender: 'bot',
-        type: 'options',
-        options: ['Yes, book it', 'Change service', 'Cancel booking'],
-        context: { isBookingConfirmation: true }
-      };
-      setMessages(prev => [...prev, clarificationMessage]);
-    }
-  }, [messages.length]);
-
-  // Get help message
-  const getHelpMessage = (): Message => ({
-    id: messages.length + 1,
-    text: "I'm here to help! Here's what I can do:\n\n" +
-      "• Book an inspection\n" +
-      "• Provide service information\n" +
-      "• Answer common questions\n" +
-      "• Connect you with support\n\n" +
-      "What would you like to do?",
-    sender: 'bot',
-    type: 'options',
-    options: ['Book an inspection', 'View services', 'Contact support', 'Common questions']
-  });
-
-  // Simulate typing delay
-  const simulateTyping = async (callback: () => void): Promise<void> => {
-    setIsTyping(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    callback();
-    setIsTyping(false);
-  };
-
-  // Process user input
-  const processUserInput = useCallback((input: string): void => {
-    const normalizedInput = input.toLowerCase().trim();
-    
-    // Check for context from previous message
-    const lastMessage = messages[messages.length - 1];
-    
-    // Handle booking confirmation context
-    if (lastMessage?.context?.isBookingConfirmation) {
-      return handleBookingConfirmation(input);
-    }
-    
-    // Handle service selection context
-    if (lastMessage?.context?.isServiceSelection) {
-      return handleServiceSelection(input);
-    }
-    
-    // Process user input with context awareness
-    const processUserInputBase = (): void => {
-      // Check for goodbye
-      if (['bye', 'goodbye', 'see you', 'goodbye!', 'bye!', 'see you later'].includes(normalizedInput)) {
-        const goodbyeMessages = [
-          `Goodbye${userName ? ' ' + userName : ''}! Have a great day! 👋`,
-          `See you later${userName ? ' ' + userName : ''}! Take care! 👋`,
-          `Goodbye${userName ? ' ' + userName : ''}! Thanks for chatting with us! 👋`
-        ];
-        
-        const randomGoodbye = goodbyeMessages[Math.floor(Math.random() * goodbyeMessages.length)];
-        
-        setMessages(prev => [...prev, {
-          id: prev.length + 1,
-          text: randomGoodbye,
-          sender: 'bot',
-          type: 'text'
-        }]);
-        
-        // Close the chat after a short delay
-        setTimeout(() => {
-          setIsOpen(false);
-        }, 1500);
-        return;
-      }
-      
-      // Check for greetings
-      const greetingResponse = handleGreeting(normalizedInput);
-      if (greetingResponse) {
-        setMessages(prev => [...prev, {
-          id: prev.length + 1,
-          text: greetingResponse.text,
-          sender: 'bot',
-          type: 'options',
-          options: greetingResponse.options
-        }]);
-        return;
-      }
-      
-      // Handle name input if not set
-      if (!hasAskedForName) {
-        handleNameInput(input);
-        return;
-      }
-      
-      // Handle booking flow
-      if (isBooking) {
-        if (currentStep === 1) {
-          // Handle service selection from text input
-          const selectedService = SERVICES.find(service => 
-            normalizedInput.includes(service.name.toLowerCase())
-          );
-          
-          if (selectedService) {
-            handleServiceSelection(selectedService.name);
-          } else {
-            const errorMessage: Message = {
-              id: messages.length + 1,
-              text: "I'm not sure which service you're referring to. Please select one from the options below:",
-              sender: 'bot',
-              type: 'options',
-              options: SERVICES.map(service => service.name),
-              context: { isServiceSelection: true }
-            };
-            setMessages(prev => [...prev, errorMessage]);
-          }
-          return;
-        } else if (currentStep === 2) {
-          // Handle booking details
-          const bookingConfirmation: Message = {
-            id: messages.length + 1,
-            text: `Thank you for providing the details! I've noted your preference for ${bookingData.service} on ${input}. Our team will contact you shortly to confirm the booking.`,
-            sender: 'bot',
-            type: 'text'
-          };
-          setMessages(prev => [...prev, bookingConfirmation]);
-          setIsBooking(false);
-          setCurrentStep(0);
-          
-          // Show options after booking
-          setTimeout(() => {
-            const followUpMessage: Message = {
-              id: messages.length + 2,
-              text: "Is there anything else I can help you with?",
-              sender: 'bot',
-              type: 'options',
-              options: ['Book another inspection', 'View services', 'Contact support']
-            };
-            setMessages(prev => [...prev, followUpMessage]);
-          }, 1000);
-          return;
-        }
-      }
-
-      // Handle help command
-      if (normalizedInput === 'help') {
-        setMessages(prev => [...prev, getHelpMessage()]);
-        return;
-      }
-
-      // Handle common questions
-      const commonQuestion = Object.entries(commonQuestions).find(([key]) => 
-        normalizedInput.includes(key)
-      );
-
-      if (commonQuestion) {
-        const response: Message = {
-          id: messages.length + 1,
-          text: commonQuestion[1],
-          sender: 'bot',
-          type: 'options',
-          options: ['Book an inspection', 'View services', 'Contact support', 'Help']
-        };
-        setMessages(prev => [...prev, response]);
-        return;
-      }
-
-      // Default response with contextual options
-      const defaultOptions = lastMessage?.options || ['Book an inspection', 'View services', 'Contact support', 'Help'];
-      
-      const defaultResponse: Message = {
-        id: messages.length + 1,
-        text: "I'm not sure how to help with that. How can I assist you today?",
-        sender: 'bot',
-        type: 'options',
-        options: Array.from(new Set(defaultOptions)) // Remove duplicates
-      };
-      
-      setMessages(prev => [...prev, defaultResponse]);
-    };
-
-    processUserInputBase();
-  }, [
-    messages, 
-    userName, 
-    hasAskedForName, 
-    isBooking, 
-    currentStep, 
-    bookingData.service, 
-    handleServiceSelection, 
-    handleBookingConfirmation
+  const [userData, setUserData] = useState<UserData>({});
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      sender: "bot",
+      text: "👋 Sawubona! Welcome to Third Eye SA. How can I assist you today?",
+      type: "greeting",
+      options: [
+        {
+          text: "📅 Book a Service",
+          action: () => {
+            addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+            setContext({ step: "selectService" });
+          },
+        },
+        {
+          text: "ℹ️ Learn about Services",
+          action: () => {
+            const servicesList = services
+              .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+              .join("\n");
+            addBotMessage(`Here are our services:\n\n${servicesList}`);
+            addBotMessage("Would you like to book one of these services?", "options", [
+              {
+                text: "✅ Yes, book a service",
+                action: () => {
+                  addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+                  setContext({ step: "selectService" });
+                },
+              },
+              {
+                text: "❌ No, thanks",
+                action: () => {
+                  addBotMessage("No problem! Is there anything else I can help you with?");
+                  setContext({ step: "chooseOption" });
+                },
+              },
+              {
+                text: "❓ Help",
+                action: () => {
+                  addBotMessage(getHelpMessage("confirmServiceAfterInfo"), "help");
+                  setContext({ step: "help" });
+                },
+              },
+            ]);
+            setContext({ step: "confirmServiceAfterInfo" });
+          },
+        },
+        {
+          text: "💬 Talk to a Human",
+          action: () => {
+            addBotMessage("Connecting you to a human agent... Please wait a moment.");
+            setContext({ step: "humanHandoff" });
+          },
+        },
+        {
+          text: "❓ Help",
+          action: () => {
+            addBotMessage(getHelpMessage("greeting"), "help");
+            setContext({ step: "help" });
+          },
+        },
+      ],
+    },
   ]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [context, setContext] = useState<Context>({ step: "greeting" });
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Handle send message
-  const handleSendMessage = (e: React.FormEvent<HTMLFormElement>): void => {
-    e.preventDefault();
-    const userInput = inputValue.trim();
-    if (!userInput || isTyping) return;
-
-    // Add user message
-    const userMessage: Message = {
-      id: messages.length + 1,
-      text: userInput,
-      sender: 'user',
-      type: 'text'
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-
-    // Process the message with typing indicator
-    simulateTyping(() => processUserInput(userInput));
-  };
-
-  // Toggle chat window
-  const toggleChat = (): void => {
-    setIsOpen(!isOpen);
-  };
-
-  // Handle quick reply
-  const handleQuickReply = (text: string): void => {
-    if (isTyping) return;
-    
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now(),
-      text,
-      sender: 'user',
-      type: 'text'
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    
-    // Process with typing indicator
-    simulateTyping(() => {
-      const lowerText = text.toLowerCase();
-      
-      // Check for navigation options first
-      if (lowerText === 'back to main menu') {
-        const welcomeMessage: Message = {
-          id: Date.now() + 1,
-          text: `Welcome back! How can I help you today?`,
-          sender: 'bot',
-          type: 'options',
-          options: ['Book an inspection', 'View services', 'Contact support']
-        };
-        setMessages(prev => [...prev, welcomeMessage]);
-        setCurrentStep(0);
-        setIsBooking(false);
-        return;
-      }
-      
-      if (lowerText === 'view other services' || lowerText === 'view services') {
-        const servicesMessage: Message = {
-          id: Date.now() + 1,
-          text: 'Here are our available services. Please select one:',
-          sender: 'bot',
-          type: 'options',
-          options: [...SERVICES.map(s => s.name), 'Back to main menu'],
-          context: { isServiceSelection: true }
-        };
-        setMessages(prev => [...prev, servicesMessage]);
-        return;
-      }
-      
-      // Check if the text matches any service name
-      const selectedService = SERVICES.find(service => 
-        service.name.toLowerCase() === lowerText
-      );
-      
-      if (selectedService) {
-        handleServiceSelection(selectedService.name);
-      } else if (lowerText === 'book an inspection' || lowerText === 'book this service') {
-        if (bookingData.service) {
-          // If we already have a service selected, proceed to booking
-          startBooking();
-        } else {
-          // Otherwise show services to select from
-          const servicesMessage: Message = {
-            id: Date.now() + 1,
-            text: 'Please select a service to book:',
-            sender: 'bot',
-            type: 'options',
-            options: [...SERVICES.map(s => s.name), 'Back to main menu'],
-            context: { isServiceSelection: true }
-          };
-          setMessages(prev => [...prev, servicesMessage]);
+  // Add bot message with typing indicator
+  const addBotMessage = (
+    text: string,
+    type: string = "message",
+    options?: { text: string; action: () => void }[]
+  ) => {
+    setIsTyping(true);
+    setTimeout(() => {
+      setMessages((prev) => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage && lastMessage.text === text && lastMessage.sender === "bot") {
+          return prev; // Skip adding duplicate message
         }
-      } else if (lowerText === 'help') {
-        setMessages(prev => [...prev, getHelpMessage()]);
-      } else {
-        processUserInput(text);
-      }
-    });
+        return [...prev, { sender: "bot" as const, text, type, options }];
+      });
+      setIsTyping(false);
+    }, 500); // Simulate typing delay
+  };
+
+  // Handle option click
+  const handleOptionClick = (action: () => void, text: string) => {
+    setMessages((prev) => [...prev, { sender: "user", text }]);
+    action();
+  };
+
+  // Format price with currency
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: "ZAR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
+  // Validate email format
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  // Validate phone number
+  const isValidPhone = (phone: string) => {
+    return /^(\+27|0)[6-8][0-9]{8}$/.test(phone);
+  };
+
+  // Sanitize input
+  const sanitizeInput = (input: string) => {
+    return input.replace(/[<>]/g, "").trim();
+  };
+
+  // Reset chat
+  const resetChat = (
+    setContext: React.Dispatch<React.SetStateAction<Context>>,
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+    setUserData: React.Dispatch<React.SetStateAction<UserData>>
+  ) => {
+    setMessages([
+      {
+        sender: "bot",
+        text: "👋 Sawubona! Welcome back to Third Eye SA. How can I assist you today?",
+        type: "greeting",
+        options: [
+          {
+            text: "📅 Book a Service",
+            action: () => {
+              addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+              setContext({ step: "selectService" });
+            },
+          },
+          {
+            text: "ℹ️ Learn about Services",
+            action: () => {
+              const servicesList = services
+                .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+                .join("\n");
+              addBotMessage(`Here are our services:\n\n${servicesList}`);
+              addBotMessage("Would you like to book one of these services?", "options", [
+                {
+                  text: "✅ Yes, book a service",
+                  action: () => {
+                    addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+                    setContext({ step: "selectService" });
+                  },
+                },
+                {
+                  text: "❌ No, thanks",
+                  action: () => {
+                    addBotMessage("No problem! Is there anything else I can help you with?");
+                    setContext({ step: "chooseOption" });
+                  },
+                },
+                {
+                  text: "❓ Help",
+                  action: () => {
+                    addBotMessage(getHelpMessage("confirmServiceAfterInfo"), "help");
+                    setContext({ step: "help" });
+                  },
+                },
+              ]);
+              setContext({ step: "confirmServiceAfterInfo" });
+            },
+          },
+          {
+            text: "💬 Talk to a Human",
+            action: () => {
+              addBotMessage("Connecting you to a human agent... Please wait a moment.");
+              setContext({ step: "humanHandoff" });
+            },
+          },
+          {
+            text: "❓ Help",
+            action: () => {
+              addBotMessage(getHelpMessage("greeting"), "help");
+              setContext({ step: "help" });
+            },
+          },
+        ],
+      },
+    ]);
+    setContext({ step: "greeting" });
+    setUserData({});
   };
 
   // Render message content
-  const renderMessageContent = (message: Message): ReactNode => {
-    if (isTyping && message.sender === 'bot') {
+  const renderMessage = (message: Message) => {
+    if (message.type === "service-selection") {
       return (
-        <div className="flex space-x-1">
-          <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-2 h-2 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        <div className="w-full mb-4">
+          <div className="text-base font-medium text-gray-800 dark:text-gray-100 mb-3 px-1">
+            {message.text}
+          </div>
+          <div className="grid gap-3">
+            {message.options?.map((option, index) => {
+              const [title, ...details] = option.text.split("\n").filter(Boolean);
+              const emoji = title.match(
+                /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1F0}-\u{1F1FF}]/u
+              )?.[0] || "🔍";
+              const cleanTitle = title.replace(emoji, "").replace(/^\s*\*?\s*|\s*\*?\s*$/g, "").trim();
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleOptionClick(option.action, cleanTitle)}
+                  className="w-full text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl mt-0.5">{emoji}</div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 dark:text-white text-base">
+                        {cleanTitle}
+                      </div>
+                      {details.length > 0 && (
+                        <div className="text-sm text-gray-700 dark:text-gray-300 mt-1.5 space-y-1">
+                          {details.map((line, i) => (
+                            <div key={i} className="leading-tight">{line.replace(/[\*_]/g, "")}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       );
     }
 
-    // Render media if present
-    const mediaElements = message.media?.map((item, index) => {
-      switch (item.type) {
-        case 'image':
-          return (
-            <div key={index} className="my-2 rounded-lg overflow-hidden">
-              <img 
-                src={item.url} 
-                alt={item.alt || ''} 
-                title={item.title}
-                className="max-w-full h-auto rounded-lg"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
-            </div>
-          );
-        // Add cases for other media types (document, video) as needed
-        default:
-          return null;
-      }
-    });
-    
-    // Render text content
-    const textContent = typeof message.text === 'string' 
-      ? message.text.split('\n').map((line, i) => (
-          <p key={i} className="mb-1">{line}</p>
-        ))
-      : message.text;
-
     return (
-      <>
-        {textContent}
-        {mediaElements}
-      </>
+      <div
+        className={`flex flex-col ${message.sender === "user" ? "items-end" : "items-start"} mb-4 w-full px-2`}
+      >
+        <div
+          className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+            message.sender === "user"
+              ? "bg-blue-600 text-white rounded-br-sm shadow-md"
+              : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm shadow-sm border border-gray-200 dark:border-gray-700"
+          }`}
+        >
+          {message.text.split("\n").map((line, i) => (
+            <p key={i} className="mb-1.5 text-base leading-relaxed">{line}</p>
+          ))}
+          {message.options && (
+            <div className="mt-3 flex flex-col space-y-2.5">
+              {message.options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleOptionClick(option.action, option.text)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    option.text.includes("✅") || option.text.includes("Yes")
+                      ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
+                      : option.text.includes("❌") || option.text.includes("No")
+                      ? "bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg"
+                      : option.text.includes("❓")
+                      ? "bg-yellow-500 hover:bg-yellow-600 text-white shadow-md hover:shadow-lg"
+                      : "bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-200 hover:border-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:hover:border-blue-500 dark:text-gray-200 shadow-sm hover:shadow-md"
+                  }`}
+                >
+                  {option.text}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     );
   };
 
-  // Get contextual quick replies based on conversation state
-  const getContextualReplies = (): string[] => {
-    const lastMessage = messages[messages.length - 1];
-    
-    if (!lastMessage || lastMessage.sender === 'user') {
-      return [];
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
+  const handleUserInput = (userText: string) => {
+    const sanitizedText = sanitizeInput(userText);
+    if (!sanitizedText) {
+      addBotMessage("Please enter a valid response.");
+      return;
     }
 
-    // Check for specific contexts in the last bot message
-    if (lastMessage.context?.isServiceSelection) {
-      return [
-        'Vehicle Inspection', 
-        'New Car Consultation',
-        'Rental Property Inspection',
-        'Holiday Accommodation Inspection'
-      ];
+    setMessages((prev) => [...prev, { sender: "user", text: sanitizedText }]);
+
+    // Handle "help" input in any step
+    if (/help/i.test(sanitizedText)) {
+      addBotMessage(getHelpMessage(context.step), "help", [
+        {
+          text: "🔙 Continue",
+          action: () => {
+            if (context.step === "selectService") {
+              addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+            } else if (context.step === "schedule") {
+              const availableDates = getAvailableDates();
+              addBotMessage(
+                "When would you like to schedule your service? Here are some available time slots:\n" +
+                  availableDates.join("\n"),
+                "schedule-options",
+                availableDates.map((date) => ({
+                  text: date,
+                  action: () => {
+                    setUserData((prev) => ({ ...prev, schedule: date }));
+                    addBotMessage(`Got it! For ${userData.service}, we've noted "${date}" as your preferred time.`);
+                    addBotMessage("What's your full name?");
+                    setContext({ step: "getName" });
+                  },
+                }))
+              );
+            } else if (context.step === "getName") {
+              addBotMessage("What's your full name?");
+            } else if (context.step === "getPhone") {
+              addBotMessage("What's the best phone number to reach you?");
+            } else if (context.step === "getEmail") {
+              addBotMessage("What's your email address?");
+            } else if (context.step === "reminderConfirmation") {
+              addBotMessage("Would you like to receive a reminder before your appointment?", "options", [
+                {
+                  text: "✅ Yes, please remind me",
+                  action: () => {
+                    addBotMessage("Great! We'll send you a reminder 24 hours before your appointment.");
+                    setTimeout(() => {
+                      addBotMessage("Is there anything else I can help you with?", "options", [
+                        {
+                          text: "📅 Book another service",
+                          action: () => {
+                            addBotMessage(
+                              "Which service would you like to book?",
+                              "service-selection",
+                              getServiceOptions(setContext, addBotMessage).options
+                            );
+                            setContext({ step: "selectService" });
+                          },
+                        },
+                        {
+                          text: "🏠 Back to main menu",
+                          action: () => setContext({ step: "chooseOption" }),
+                        },
+                        {
+                          text: "❌ No, that's all thanks!",
+                          action: () => {
+                            addBotMessage("Thank you for choosing Third Eye SA! Have a lekker day! 👋");
+                            setTimeout(() => resetChat(setContext, setMessages, setUserData), 2000);
+                          },
+                        },
+                      ]);
+                    }, 800);
+                  },
+                },
+                {
+                  text: "❌ No thanks",
+                  action: () => {
+                    addBotMessage("No problem! Is there anything else I can help you with?", "options", [
+                      {
+                        text: "📅 Book another service",
+                        action: () => {
+                          addBotMessage(
+                            "Which service would you like to book?",
+                            "service-selection",
+                            getServiceOptions(setContext, addBotMessage).options
+                          );
+                          setContext({ step: "selectService" });
+                        },
+                      },
+                      {
+                        text: "🏠 Back to main menu",
+                        action: () => setContext({ step: "chooseOption" }),
+                      },
+                      {
+                        text: "❌ No, that's all thanks!",
+                        action: () => {
+                          addBotMessage("Thank you for choosing Third Eye SA! Have a lekker day! 👋");
+                          setTimeout(() => resetChat(setContext, setMessages, setUserData), 2000);
+                        },
+                      },
+                    ]);
+                  },
+                },
+              ]);
+            } else {
+              addBotMessage("How can I assist you today?", "options", [
+                {
+                  text: "📅 Book a Service",
+                  action: () => {
+                    addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+                    setContext({ step: "selectService" });
+                  },
+                },
+                {
+                  text: "ℹ️ Learn about Services",
+                  action: () => {
+                    const servicesList = services
+                      .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+                      .join("\n");
+                    addBotMessage(`Here are our services:\n\n${servicesList}`);
+                    setContext({ step: "chooseOption" });
+                  },
+                },
+                {
+                  text: "💬 Talk to a Human",
+                  action: () => {
+                    addBotMessage("Connecting you to a human agent... Please wait a moment.");
+                    setContext({ step: "humanHandoff" });
+                  },
+                },
+                {
+                  text: "❓ Help",
+                  action: () => {
+                    addBotMessage(getHelpMessage("chooseOption"), "help");
+                    setContext({ step: "help" });
+                  },
+                },
+              ]);
+            }
+            setContext({ step: context.step });
+          },
+        },
+        {
+          text: "🏠 Back to main menu",
+          action: () => {
+            addBotMessage("How can I assist you today?", "options", [
+              {
+                text: "📅 Book a Service",
+                action: () => {
+                  addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+                  setContext({ step: "selectService" });
+                },
+              },
+              {
+                text: "ℹ️ Learn about Services",
+                action: () => {
+                  const servicesList = services
+                    .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+                    .join("\n");
+                  addBotMessage(`Here are our services:\n\n${servicesList}`);
+                  setContext({ step: "chooseOption" });
+                },
+              },
+              {
+                text: "💬 Talk to a Human",
+                action: () => {
+                  addBotMessage("Connecting you to a human agent... Please wait a moment.");
+                  setContext({ step: "humanHandoff" });
+                },
+              },
+              {
+                text: "❓ Help",
+                action: () => {
+                  addBotMessage(getHelpMessage("chooseOption"), "help");
+                  setContext({ step: "help" });
+                },
+              },
+            ]);
+            setContext({ step: "chooseOption" });
+          },
+        },
+      ]);
+      setContext({ step: "help" });
+      return;
     }
 
-    if (lastMessage.context?.isBookingConfirmation) {
-      return ['Yes, book it', 'No, change details', 'Cancel booking'];
-    }
+    switch (context.step) {
+      case "greeting":
+      case "chooseOption":
+        if (/book|service/i.test(sanitizedText)) {
+          addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+          setContext({ step: "selectService" });
+        } else if (/learn|info|services/i.test(sanitizedText)) {
+          const servicesList = services
+            .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+            .join("\n");
+          addBotMessage(`Here are our services:\n\n${servicesList}`, "services-list", [
+            {
+              text: "📅 Book a Service",
+              action: () => {
+                addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+                setContext({ step: "selectService" });
+              },
+            },
+            {
+              text: "🔙 Back to Main Menu",
+              action: () => setContext({ step: "chooseOption" }),
+            },
+            {
+              text: "❓ Help",
+              action: () => {
+                addBotMessage(getHelpMessage("chooseOption"), "help");
+                setContext({ step: "help" });
+              },
+            },
+          ]);
+        } else if (/human|agent|talk to someone/i.test(sanitizedText)) {
+          addBotMessage("Connecting you to a human agent... Please wait a moment.");
+          setContext({ step: "humanHandoff" });
+        } else {
+          addBotMessage("Please select one of the options below:", "options", [
+            {
+              text: "📅 Book a Service",
+              action: () => {
+                addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+                setContext({ step: "selectService" });
+              },
+            },
+            {
+              text: "ℹ️ Learn about Services",
+              action: () => {
+                const servicesList = services
+                  .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+                  .join("\n");
+                addBotMessage(`Here are our services:\n\n${servicesList}`, "services-list");
+              },
+            },
+            {
+              text: "💬 Talk to a Human",
+              action: () => {
+                addBotMessage("Connecting you to a human agent... Please wait a moment.");
+                setContext({ step: "humanHandoff" });
+              },
+            },
+            {
+              text: "❓ Help",
+              action: () => {
+                addBotMessage(getHelpMessage("chooseOption"), "help");
+                setContext({ step: "help" });
+              },
+            },
+          ]);
+        }
+        break;
 
-    if (lastMessage.context?.isHelpRequest) {
-      return ['Booking help', 'Service details', 'Contact support'];
-    }
+      case "confirmServiceAfterInfo":
+        if (/yes|y/i.test(sanitizedText)) {
+          addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+          setContext({ step: "selectService" });
+        } else {
+          addBotMessage("No problem! Is there anything else I can help you with?");
+          setContext({ step: "chooseOption" });
+        }
+        break;
 
-    // Default quick replies
-    return [
-      'Book an inspection', 
-      'View services', 
-      'Contact support'
-    ];
+      case "selectService": {
+        const selectedService = services.find((s) => s.name.toLowerCase() === sanitizedText.toLowerCase());
+        if (selectedService) {
+          setUserData((prev) => ({ ...prev, service: selectedService.name }));
+          const availableDates = getAvailableDates();
+          addBotMessage(
+            `You've selected: ${selectedService.emoji} *${selectedService.name}*\n` +
+              `⏱ Duration: ${selectedService.duration}\n` +
+              `💰 Price: ${formatPrice(selectedService.price)} (VAT incl.)\n\n` +
+              `${selectedService.description}\n\n` +
+              `Would you like to book this service?`,
+            "service-confirmation",
+            [
+              {
+                text: "✅ Yes, book now",
+                action: () => {
+                  addBotMessage(
+                    "When would you like to schedule your service? Here are some available time slots:\n" +
+                      availableDates.join("\n"),
+                    "schedule-options",
+                    availableDates.map((date) => ({
+                      text: date,
+                      action: () => {
+                        setUserData((prev) => ({ ...prev, schedule: date }));
+                        addBotMessage(`Got it! For ${selectedService.name}, we've noted "${date}" as your preferred time.`);
+                        addBotMessage("What's your full name?");
+                        setContext({ step: "getName" });
+                      },
+                    }))
+                  );
+                },
+              },
+              {
+                text: "🔄 View other services",
+                action: () => {
+                  addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+                  setContext({ step: "selectService" });
+                },
+              },
+              {
+                text: "❓ Help",
+                action: () => {
+                  addBotMessage(getHelpMessage("selectService"), "help");
+                  setContext({ step: "help" });
+                },
+              },
+              {
+                text: "❌ Cancel",
+                action: () => resetChat(setContext, setMessages, setUserData),
+              },
+            ]
+          );
+        } else {
+          addBotMessage(
+            "I couldn't find that service. Please select from the options below:",
+            "service-selection",
+            getServiceOptions(setContext, addBotMessage).options
+          );
+        }
+        break;
+      }
+
+      case "schedule":
+        const availableDates = getAvailableDates();
+        if (availableDates.some((date) => date.toLowerCase().includes(sanitizedText.toLowerCase()))) {
+          setUserData((prev) => ({ ...prev, schedule: sanitizedText }));
+          addBotMessage(`Got it! For ${userData.service}, we've noted "${sanitizedText}" as your preferred time.`);
+          addBotMessage("What's your full name?");
+          setContext({ step: "getName" });
+        } else {
+          addBotMessage(
+            "Please select a valid date from the options below:",
+            "schedule-options",
+            availableDates.map((date) => ({
+              text: date,
+              action: () => {
+                setUserData((prev) => ({ ...prev, schedule: date }));
+                addBotMessage(`Got it! For ${userData.service}, we've noted "${date}" as your preferred time.`);
+                addBotMessage("What's your full name?");
+                setContext({ step: "getName" });
+              },
+            }))
+          );
+        }
+        break;
+
+      case "getName":
+        if (!sanitizedText) {
+          addBotMessage("Please provide your full name.");
+          return;
+        }
+        setUserData((prev) => ({ ...prev, name: sanitizedText }));
+        addBotMessage(`Thanks, ${sanitizedText}! What's the best phone number to reach you?`);
+        setContext({ step: "getPhone" });
+        break;
+
+      case "getPhone":
+        if (!isValidPhone(sanitizedText)) {
+          addBotMessage("Please enter a valid South African phone number (e.g., 071 234 5678 or +27712345678)");
+          return;
+        }
+        setUserData((prev) => ({ ...prev, phone: sanitizedText }));
+        addBotMessage("Great! Finally, what's your email address?");
+        setContext({ step: "getEmail" });
+        break;
+
+      case "getEmail":
+        if (!isValidEmail(sanitizedText)) {
+          addBotMessage("Please enter a valid email address (e.g., yourname@example.com)");
+          return;
+        }
+        setUserData((prev) => ({ ...prev, email: sanitizedText }));
+        const bookedService = services.find((s) => s.name === userData.service);
+        const formatTime = (timeString: string) => {
+          if (!timeString) return "Not specified";
+          const date = new Date(timeString);
+          return isNaN(date.getTime())
+            ? timeString
+            : date.toLocaleString("en-ZA", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: "Africa/Johannesburg",
+              });
+        };
+        const summary =
+          `✅ *Booking Confirmed!*\n\n` +
+          `🔹 *Service*: ${userData.service || "Not specified"}\n` +
+          (bookedService
+            ? ` ⏱ ${bookedService.duration} • ${formatPrice(bookedService.price)} (VAT incl.)\n`
+            : "") +
+          `\n📅 *When*: ${formatTime(userData.schedule || "")} (SAST)\n` +
+          `\n👤 *Your Details*\n` +
+          ` 👤 ${userData.name || "Not specified"}\n` +
+          ` 📞 ${userData.phone || "Not specified"}\n` +
+          ` 📧 ${sanitizedText}\n\n` +
+          `We'll send a confirmation to your email with all the details. If you need to make any changes, please contact us at info@thirdeye.co.za or call 0861 123 456.`;
+        addBotMessage(summary);
+        addBotMessage("Would you like to receive a reminder before your appointment?", "options", [
+          {
+            text: "✅ Yes, please remind me",
+            action: () => {
+              addBotMessage("Great! We'll send you a reminder 24 hours before your appointment.");
+              setTimeout(() => {
+                addBotMessage("Is there anything else I can help you with?", "options", [
+                  {
+                    text: "📅 Book another service",
+                    action: () => {
+                      addBotMessage(
+                        "Which service would you like to book?",
+                        "service-selection",
+                        getServiceOptions(setContext, addBotMessage).options
+                      );
+                      setContext({ step: "selectService" });
+                    },
+                  },
+                  {
+                    text: "🏠 Back to main menu",
+                    action: () => setContext({ step: "chooseOption" }),
+                  },
+                  {
+                    text: "❌ No, that's all thanks!",
+                    action: () => {
+                      addBotMessage("Thank you for choosing Third Eye SA! Have a lekker day! 👋");
+                      setTimeout(() => resetChat(setContext, setMessages, setUserData), 2000);
+                    },
+                  },
+                  {
+                    text: "❓ Help",
+                    action: () => {
+                      addBotMessage(getHelpMessage("reminderConfirmation"), "help");
+                      setContext({ step: "help" });
+                    },
+                  },
+                ]);
+              }, 800);
+            },
+          },
+          {
+            text: "❌ No thanks",
+            action: () => {
+              addBotMessage("No problem! Is there anything else I can help you with?", "options", [
+                {
+                  text: "📅 Book another service",
+                  action: () => {
+                    addBotMessage(
+                      "Which service would you like to book?",
+                      "service-selection",
+                      getServiceOptions(setContext, addBotMessage).options
+                    );
+                    setContext({ step: "selectService" });
+                  },
+                },
+                {
+                  text: "🏠 Back to main menu",
+                  action: () => setContext({ step: "chooseOption" }),
+                },
+                {
+                  text: "❌ No, that's all thanks!",
+                  action: () => {
+                    addBotMessage("Thank you for choosing Third Eye SA! Have a lekker day! 👋");
+                    setTimeout(() => resetChat(setContext, setMessages, setUserData), 2000);
+                  },
+                },
+                {
+                  text: "❓ Help",
+                  action: () => {
+                    addBotMessage(getHelpMessage("reminderConfirmation"), "help");
+                    setContext({ step: "help" });
+                  },
+                },
+              ]);
+            },
+          },
+          {
+            text: "❓ Help",
+            action: () => {
+              addBotMessage(getHelpMessage("reminderConfirmation"), "help");
+              setContext({ step: "help" });
+            },
+          },
+        ]);
+        setContext({ step: "reminderConfirmation" });
+        break;
+
+      case "reminderConfirmation":
+        if (/yes|y/i.test(sanitizedText)) {
+          addBotMessage("Great! We'll send you a reminder 24 hours before your appointment.");
+        } else {
+          addBotMessage("No problem! Your appointment is all set.");
+        }
+        setTimeout(() => {
+          addBotMessage("Is there anything else I can help you with?", "options", [
+            {
+              text: "📅 Book another service",
+              action: () => {
+                addBotMessage(
+                  "Which service would you like to book?",
+                  "service-selection",
+                  getServiceOptions(setContext, addBotMessage).options
+                );
+                setContext({ step: "selectService" });
+              },
+            },
+            {
+              text: "🏠 Back to main menu",
+              action: () => setContext({ step: "chooseOption" }),
+            },
+            {
+              text: "❌ No, that's all thanks!",
+              action: () => {
+                addBotMessage("Thank you for choosing Third Eye SA! Have a lekker day! 👋");
+                setTimeout(() => resetChat(setContext, setMessages, setUserData), 2000);
+              },
+            },
+            {
+              text: "❓ Help",
+              action: () => {
+                addBotMessage(getHelpMessage("finalConfirmation"), "help");
+                setContext({ step: "help" });
+              },
+            },
+          ]);
+        }, 800);
+        setContext({ step: "finalConfirmation" });
+        break;
+
+      case "finalConfirmation":
+        if (/yes|y/i.test(sanitizedText)) {
+          addBotMessage("What would you like to do next?", "options", [
+            {
+              text: "📅 Book a service",
+              action: () => {
+                addBotMessage(
+                  "Which service would you like to book?",
+                  "service-selection",
+                  getServiceOptions(setContext, addBotMessage).options
+                );
+                setContext({ step: "selectService" });
+              },
+            },
+            {
+              text: "ℹ️ Learn about services",
+              action: () => {
+                const servicesList = services
+                  .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+                  .join("\n");
+                addBotMessage(`Here are our services:\n\n${servicesList}`);
+                setContext({ step: "chooseOption" });
+              },
+            },
+            {
+              text: "💬 Talk to a human",
+              action: () => {
+                addBotMessage("Connecting you to a human agent... Please wait a moment.");
+                setContext({ step: "humanHandoff" });
+              },
+            },
+            {
+              text: "❓ Help",
+              action: () => {
+                addBotMessage(getHelpMessage("finalConfirmation"), "help");
+                setContext({ step: "help" });
+              },
+            },
+          ]);
+        } else {
+          addBotMessage("Thank you for choosing Third Eye SA! Have a lekker day! 👋");
+          setTimeout(() => resetChat(setContext, setMessages, setUserData), 2000);
+        }
+        break;
+
+      case "humanHandoff":
+        addBotMessage(
+          "A friendly customer service agent will be with you shortly. Our operating hours are Monday to Friday, 8:00 to 17:00 SAST. In the meantime, is there anything else I can help you with?",
+          "options",
+          [
+            {
+              text: "📅 Book a Service",
+              action: () => {
+                addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+                setContext({ step: "selectService" });
+              },
+            },
+            {
+              text: "ℹ️ Learn about Services",
+              action: () => {
+                const servicesList = services
+                  .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+                  .join("\n");
+                addBotMessage(`Here are our services:\n\n${servicesList}`);
+                setContext({ step: "chooseOption" });
+              },
+            },
+            {
+              text: "❓ Help",
+              action: () => {
+                addBotMessage(getHelpMessage("humanHandoff"), "help");
+                setContext({ step: "help" });
+              },
+            },
+          ]
+        );
+        setContext({ step: "chooseOption" });
+        break;
+
+      case "help":
+        addBotMessage("How can I assist you now?", "options", [
+          {
+            text: "📅 Book a Service",
+            action: () => {
+              addBotMessage("Which service would you like to book?", "service-selection", getServiceOptions(setContext, addBotMessage).options);
+              setContext({ step: "selectService" });
+            },
+          },
+          {
+            text: "ℹ️ Learn about Services",
+            action: () => {
+              const servicesList = services
+                .map((s) => `${s.emoji} *${s.name}* (${s.duration}) - ${formatPrice(s.price)}`)
+                .join("\n");
+              addBotMessage(`Here are our services:\n\n${servicesList}`);
+              setContext({ step: "chooseOption" });
+            },
+          },
+          {
+            text: "💬 Talk to a Human",
+            action: () => {
+              addBotMessage("Connecting you to a human agent... Please wait a moment.");
+              setContext({ step: "humanHandoff" });
+            },
+          },
+          {
+            text: "❓ Help",
+            action: () => {
+              addBotMessage(getHelpMessage("help"), "help");
+              setContext({ step: "help" });
+            },
+          },
+        ]);
+        break;
+
+      default:
+        addBotMessage("Howzit! I'm here to help. How can I assist you today?");
+        setContext({ step: "chooseOption" });
+    }
   };
 
-  const chatContainerStyle = {
-    height: '85vh',
-    maxHeight: '600px',
-    width: '95vw',
-    maxWidth: '24rem',
-    minWidth: '280px',
-    position: 'fixed' as const,
-    bottom: '1rem',
-    right: '1rem',
-    zIndex: 50,
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    overflow: 'hidden',
-    borderRadius: '0.5rem',
-    backgroundColor: 'white'
+  const handleSend = () => {
+    if (isTyping || !input.trim()) return;
+    handleUserInput(input);
+    setInput("");
   };
 
-  const toggleButtonStyle = {
-    position: 'fixed' as const,
-    bottom: '1rem',
-    right: '1rem',
-    zIndex: 40
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !isTyping && input.trim()) handleSend();
   };
 
   return (
-    <>
-      {!isOpen ? (
-        <button
-          onClick={toggleChat}
-          style={toggleButtonStyle}
-          className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
-          aria-label="Open chat"
-        >
-          <FontAwesomeIcon icon={faComments} size="lg" />
-        </button>
-      ) : (
-        <div style={chatContainerStyle}>
-          {/* Header */}
-          <div className="flex items-center justify-between p-3 bg-blue-500 text-white">
-            <h3 className="text-lg font-medium">Chat with us</h3>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  setMessages([{
-                    id: Date.now(),
-                    text: " Chat cleared! How can I help you today?",
-                    sender: 'bot',
-                    type: 'text'
-                  }]);
-                  setCurrentStep(0);
-                  setBookingData({});
-                  setHasAskedForName(false);
-                }}
-                className="text-white hover:bg-blue-600 focus:outline-none px-2 py-1 text-sm rounded"
-                aria-label="New chat"
-              >
-                New Chat
-              </button>
-              <button
-                onClick={toggleChat}
-                className="text-white hover:bg-blue-600 focus:outline-none w-8 h-8 flex items-center justify-center rounded-full"
-                aria-label="Close chat"
-              >
-                <FontAwesomeIcon icon={faTimes} />
+    <div className="fixed bottom-6 right-6 z-50">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-4 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+      >
+        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-20 right-6 w-80 h-[500px] flex flex-col rounded-2xl shadow-2xl backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-2xl">
+              <span className="font-semibold">Third Eye Assistant</span>
+              <button onClick={() => setIsOpen(false)}>
+                <X size={20} />
               </button>
             </div>
-          </div>
-          
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-            {messages.map((message) => (
-              <div 
-                key={message.id} 
-                className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div 
-                  className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
-                    message.sender === 'user' 
-                      ? 'bg-blue-500 text-white rounded-br-none' 
-                      : 'bg-white text-gray-800 rounded-bl-none shadow'
-                  }`}
-                >
-                  <div className="text-sm whitespace-pre-wrap">
-                    {renderMessageContent(message)}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+              {messages.map((msg, index) => renderMessage(msg))}
+              {isTyping && (
+                <div className="flex justify-start px-2">
+                  <div className="px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-sm font-medium text-blue-700 dark:text-blue-300 animate-pulse border border-blue-100 dark:border-blue-800">
+                    Typing...
                   </div>
-                  
-                  {/* Quick reply options */}
-                  {message.sender === 'bot' && message.type === 'options' && message.options && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {message.options.map((option, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleQuickReply(option)}
-                          className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded-full whitespace-nowrap"
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-          
-          {/* Input area */}
-          <div className="p-3 bg-white border-t border-gray-200">
-            <form onSubmit={handleSendMessage} className="flex space-x-2">
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="flex items-center p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <input
                 type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                value={input}
+                onChange={(e) => setInput(sanitizeInput(e.target.value))}
+                onKeyDown={handleKeyDown}
                 disabled={isTyping}
+                className="flex-1 p-3 text-base rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                disabled={!inputValue.trim() || isTyping}
+                onClick={handleSend}
+                disabled={isTyping || !input.trim()}
+                className="ml-3 p-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Send message"
               >
-                <FontAwesomeIcon icon={faPaperPlane} />
+                <Send size={20} />
               </button>
-            </form>
-            
-            {/* Quick reply suggestions */}
-            {getContextualReplies().length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {getContextualReplies().map((reply, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleQuickReply(reply)}
-                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded-full whitespace-nowrap"
-                    disabled={isTyping}
-                  >
-                    {reply}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
