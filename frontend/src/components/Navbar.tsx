@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { motion, AnimatePresence } from 'framer-motion';
 import AuthButton from './AuthButton';
 
 const Navbar: React.FC = () => {
@@ -66,23 +67,58 @@ const Navbar: React.FC = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             {navLinks.map((link) => (
-              <NavLink
+              <motion.div 
                 key={link.to}
-                to={link.to}
-                className={(isActive) => 
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive 
-                      ? 'bg-gray-800 text-white' 
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                  }`
-                }
+                className="relative"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
               >
-                {link.text}
-              </NavLink>
+                <NavLink
+                  to={link.to}
+                  className={({ isActive }) => 
+                    `relative px-4 py-2 text-sm font-medium transition-all ${
+                      isActive 
+                        ? 'text-white' 
+                        : 'text-gray-300 hover:text-white'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span className="relative z-10">{link.text}</span>
+                      {isActive && (
+                        <motion.span 
+                          className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg -z-0"
+                          layoutId="navHighlight"
+                          transition={{
+                            type: 'spring',
+                            stiffness: 300,
+                            damping: 30
+                          }}
+                        />
+                      )}
+                      <motion.span 
+                        className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 -z-0"
+                        initial={{ scaleX: 0 }}
+                        animate={{ 
+                          scaleX: isActive ? 1 : 0,
+                          opacity: isActive ? 1 : 0.7
+                        }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                      />
+                    </>
+                  )}
+                </NavLink>
+              </motion.div>
             ))}
-            <div className="ml-4">
+            <motion.div 
+              className="ml-4"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+            >
               <AuthButton />
-            </div>
+            </motion.div>
           </div>
 
           {/* Mobile menu button */}
